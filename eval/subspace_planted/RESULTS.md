@@ -67,8 +67,66 @@ rollout의 **로컬 사본**을 쓴다.* 3값 어휘로는 정직하게 못 적�
 재실행 비용 = 103_ 2647s · 104_ 508s · 105_ 928s.
 ∴ 여기서 `real`은 **기록된 표가 실재**라는 뜻이지, 우리가 그걸 재생성할 수 있다는 뜻이 아니다.
 
-## 판정 상태
+## 판정 상태 — 🔴 **KILL** (2026-08-04)
 
-⬜ **미판정.** G2(양방향 판정)는 `cases.jsonl`을 `mm_preregister`로 **봉인한 뒤에만** 돌린다.
-봉인 전에 결과를 보고 프로브를 고치면 그건 회귀 테스트지 반증이 아니다.
-FP·FN 각 0이 아니면 **KILL**(명세 §반증조건).
+봉인 `98e993b2` (claim `subspace-probe-g2-planted-bidirectional-20260804`) ·
+결과 기록 am `69c7ff9b`. 실행 직전 프로토콜 SHA 비트동일 재확인 후 최초 1회 실행.
+
+```
+layer A: 4 positive · 7 negative
+FP = 2   FN = 0   →  9/11 = 0.818 < 바 1.0   ⇒  KILL
+```
+
+| 케이스 | 방향 | 실제 | 기대 |
+|---|---|---|---|
+| `clean_105` | 심은 양성 | `energy-not-matched` = **FAIL** | OK |
+| `partial_103` | 심은 양성 | `dof-uncontrolled` = **FAIL** | WARN |
+
+**두 실패 모두 거짓양성 방향이다** — 프로브가 *실재 clean 리포트를 FAIL 냈다*. 거짓음성 방향은 0/7로 깨끗했다.
+
+### 🦋 자가적발 — 점수 9/11은 실제보다 후하다
+
+`energy-not-matched`는 **격자가 있는 8케이스 전부에 FAIL을 냈다**. 상수다. 구분력이 0이다.
+
+```
+clean_105 FAIL · partial_103 FAIL · self_null FAIL · anchor_stripped FAIL
+dof_missing FAIL · relabeled_dof FAIL · estimation_eval_leak FAIL · energy_confound FAIL
+```
+
+⇒ **심은 음성 `energy_confound`의 "통과"는 무의미하다.** 항상 FAIL을 뱉는 검사는 모든 음성을 자동으로
+"잡는다". 그러므로 실제 상태는 9/11보다 나쁘다 — 통과 9건 중 1건이 공허하다.
+
+### 왜 이렇게 됐나 — 정수 k는 연속 에너지 목표를 맞출 수 없다
+
+105_ v04 · seed 0 · target 0.1 실측:
+
+| 팔 | `k_per_bin` | `energy_per_bin` |
+|---|---|---|
+| RANDOM | [4, 3, 1, 4] | [0.1203, 0.1039, 0.1069, 0.1374] |
+| GLOBAL | [2, 2, 5, 8] | [**0.1824**, 0.1106, 0.1081, 0.1037] |
+| LOCAL | [2, 2, 4, 5] | [0.1770, 0.1203, 0.1012, 0.1052] |
+
+bin 0에서 RANDOM 0.1203 vs GLOBAL 0.1824 = 상대폭 **34%**. 이건 부정직이 아니라 **k가 정수이고
+기저마다 스펙트럼이 달라서** 생기는 필연이다. 105_ 자신이 `honest_limits`에 적어뒀다:
+
+> *"energy matching is approximate — k is an integer, so achieved energy overshoots the target by an
+> amount that **differs per basis and per bin**"*
+
+시드를 그룹 키에 넣어 교정해도 **131/160 그룹이 tol 0.05를 넘는다**(최대 0.55). 즉 임계 조정으로
+해결되는 문제가 아니다.
+
+⇒ **Finding 2는 C5와 같은 부류의 FP 오발 장치였다.** 아크가 명시적으로 경고한 함정을 내가 다시 만들었다.
+`energy_tol`을 0.6까지 올려 통과시키는 건 답에 맞춰 임계를 튜닝하는 것이므로 **금지**한다.
+
+### 재설계 방향 (미실행 — 새 claim_id 필요)
+
+교란의 정체는 *"달성 에너지가 팔마다 다르다"* 가 아니라 **"에너지가 아니라 k로 맞췄다"** 이다.
+따라서 검사는 달성값 간 상대폭이 아니라 ① 격자가 `kind="energy"`로 선언됐는지 ② 각 셀이 자기
+목표를 충족했는지(C3가 이미 함) ③ **같은 격자점에서 팔들이 같은 k를 쓰는지**(= k로 맞춘 증거)를 봐야 한다.
+
+`dof-uncontrolled`의 완전성 판정도 층이 틀렸다. 103_·105_ **둘 다** 팔 단위 `effect_by_seed`를 갖는다.
+갈리는 건 **셀 단위 시드**다 — 105_ 셀은 `seed=0..9`, 103_ 셀은 `seed=None`.
+
+🚨 재실행은 `mm.py` 바이트를 바꾸므로 **봉인 `98e993b2`를 그 자체 조항에 의해 무효화한다.
+반드시 새 claim_id로 재봉인한다.** 이 KILL은 원장에 그대로 남는다.
+그리고 수리 후에는 `energy_confound`의 통과가 **비로소 유의미한지** 다시 봐야 한다.

@@ -15,7 +15,7 @@ Zero training · Deterministic · Zero-dep core (Python 3.10+ stdlib; `judge` mo
 > Built while honestly killing our own project.  
 > The makers ran it on themselves first. → [🦋 Origin Story](docs/CHRONICLE.md)
 
-**[📖 Full Probe Guide →](docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 27 probes
+**[📖 Full Probe Guide →](docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
 **[📜 MIRROR-SPEC v1.1 →](docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
 **[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 46 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
 
@@ -171,7 +171,7 @@ def test_my_model_is_real():
 
 ## Three Verification Tiers
 
-You don't need to memorize 27 probes — there are exactly three ways to use the mirror:
+You don't need to memorize 28 probes — there are exactly three ways to use the mirror:
 
 ```bash
 # FULL — one shot, everything applicable runs automatically
@@ -263,6 +263,15 @@ extra keys fire extra probes. The `data` keys are identical to the JSON file for
 | Probe | # | Catches |
 |---|---|---|
 | `negative_audit` | ⑬ | Negative conclusion has too few independent angles, unregistered angles, or scope overshoot |
+
+### `subspace` — "the gain lives in a few directions" claims
+
+⚠️ **A declaration auditor, not a recomputer.** It reads the submitted table, never the basis or the model, so a falsified `energy_kept` passes. The C1–C4 consistency laws raise the cost of a false table — they do not close the hole.
+
+| Probe | # | Catches |
+|---|---|---|
+| `subspace_claim_check` | ㉘ | Undeclared bit-reproduction anchor · retained energy not matched across arms · missing degrees-of-freedom control · target not clearing the null ladder (paired sign-flip, exact 2ⁿ for n ≤ 14) · a `matched_null` arm that fails its certificate (neither collapse nor survival) · a saturated grid · the basis estimated on the very samples the effect is scored on |
+
 
 ### `judge` — LLM-judge reliability
 
@@ -694,7 +703,7 @@ pip install "measure-mirror[mcp]"
 
 **Other MCP clients** — run `mm-mcp` as the stdio server command.
 
-All 27 probes + 6 utilities + the `mm_verify` umbrella are exposed as MCP tools (37 total):  
+All 28 probes + 6 utilities + the `mm_verify` umbrella are exposed as MCP tools (38 total):  
 `mm_verify` (full / group-filtered) ·  
 `mm_register` · `mm_verify_chain` · `mm_audit` · `mm_continuous_audit` · `mm_full_audit` ·  
 `mm_baseline_fairness` · `mm_gaming_check` · `mm_leakage_check` · `mm_multiseed_check` · `mm_scope_check` ·
@@ -702,6 +711,7 @@ All 27 probes + 6 utilities + the `mm_verify` umbrella are exposed as MCP tools 
 `mm_anchor_line_source_check` · `mm_anchor_cell_check` ·  
 `mm_too_good_check` · `mm_power_check` · `mm_multiple_comparisons_check` · `mm_grim_check` ·  
 `mm_falsifiability_check` · `mm_prereg_lint` · `mm_cascade_check` · `mm_negative_audit` ·  
+`mm_subspace_claim_check` ·  
 `mm_judge_consistency_check` · `mm_judge_bias_check` · `mm_inter_rater_agreement` ·  
 `mm_judge_score_sanity` · `mm_judge_swap_check` · `mm_judge_transitivity_check` ·  
 `mm_ranking_stability_check` ·  

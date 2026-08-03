@@ -1643,3 +1643,15 @@ def test_anchor_line_source_check_smoke():
 def test_anchor_cell_check_smoke():
     assert mm.anchor_cell_check("threshold-cell").level == "WARN"
     assert mm.anchor_cell_check("deep-regime").level == "OK"
+
+
+def test_subspace_claim_check_smoke():
+    # ㉘ declaration auditor. An empty report has no anchor → FAIL, and the
+    # priority rule keeps the ladder from ever reading OK underneath that.
+    f = mm.subspace_claim_check({})
+    assert [x for x in f if x.probe.endswith("no-anchor")][0].level == "FAIL"
+    assert not [x for x in f if x.probe.endswith("null-ladder") and x.level == "OK"]
+    # a report with no grid is NOT APPLICABLE for energy matching, not failing
+    f = mm.subspace_claim_check({"anchor": {"code_path": "frozen", "tol": 1e-9,
+                                            "n_seeds": 10, "guard_seeds": 5}})
+    assert [x for x in f if x.probe.endswith("energy-not-matched")][0].level == "N/A"

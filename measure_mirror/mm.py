@@ -73,6 +73,23 @@ class Finding:
     probe: str
     level: str   # OK / WARN / FAIL
     msg: str
+    data: dict | None = None
+    """Optional structured payload.
+
+    Probes that compute numbers a caller may want to act on (recovered
+    dimension, per-arm p-values, …) attach them here instead of stuffing them
+    into ``msg``.
+
+    Compatibility, stated honestly:
+      · ``Finding(probe, level, msg)`` — unchanged (the field is defaulted).
+      · attribute access, ``==`` between two Findings — unchanged.
+      · ``dataclasses.astuple(f)`` / ``asdict(f)`` — **CHANGED**: now 4 elements
+        / 4 keys. Code comparing against a 3-tuple literal breaks. This is a
+        real break, not a theoretical one; it is accepted because no in-repo
+        caller does it (`astuple`/`asdict` on Finding: 0 hits) and the
+        alternative — encoding numbers in ``msg`` — is what this field exists
+        to stop.
+    """
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2385,6 +2402,515 @@ def full_audit(ledger_path: str, claim_id: str, *,
 
 
 # ─────────────────────────────────────────────────────────────
+# ㉘ Subspace claim — declaration auditor (NOT a recomputer)
+#
+# THIS IS A DECLARATION AUDITOR, NOT A RECOMPUTER. It reads a submitted
+# table of numbers. If `energy_kept` is written falsely, it passes. That
+# limitation is structural — it applies to all seven findings below, not
+# just the anchor one. The consistency laws C1–C4 raise the *cost* of a
+# false table; they do not close the hole. Do not read them as a fix.
+# ─────────────────────────────────────────────────────────────
+_SUBSPACE_ROLES = frozenset(
+    {"target", "null", "data_only", "dof_control", "matched_null"})
+_ANCHOR_CODE_PATHS = frozenset({"frozen", "mixed", "reimplemented", "unknown"})
+
+
+def _paired_signflip_p(diffs: list[float], *,
+                       exact_max_n: int = 14,
+                       mc_samples: int = 20000,
+                       seed: int = 0) -> float | None:
+    """Two-sided paired sign-flip permutation test. stdlib only, deterministic.
+
+    n ≤ `exact_max_n` enumerates all 2ⁿ sign assignments (exact). Above that it
+    draws `mc_samples` flips from a fixed-seed RNG, so repeated calls on the
+    same input return the same p.
+
+    Deliberately NOT the normal approximation used elsewhere: at n=10 the
+    normal fallback is anti-conservative (over-rejects). An exact enumeration
+    costs 1024 evaluations there — no reason to approximate.
+
+    Returns None when there is nothing to test (n = 0).
+    """
+    d = [float(x) for x in diffs]
+    n = len(d)
+    if n == 0:
+        return None
+    obs = abs(sum(d) / n)
+    # A run of exact zeros has no evidence in either direction; p = 1.
+    if all(x == 0.0 for x in d):
+        return 1.0
+
+    if n <= exact_max_n:
+        total = 1 << n
+        hits = 0
+        for mask in range(total):
+            s = 0.0
+            for i, x in enumerate(d):
+                s += -x if (mask >> i) & 1 else x
+            if abs(s / n) >= obs - 1e-15:
+                hits += 1
+        return hits / total
+
+    rng = random.Random(seed)
+    hits = 0
+    for _ in range(mc_samples):
+        s = 0.0
+        for x in d:
+            s += x if rng.getrandbits(1) else -x
+        if abs(s / n) >= obs - 1e-15:
+            hits += 1
+    return hits / mc_samples
+
+
+def _as_vec(value) -> list:
+    """Accept a scalar or a per-bin vector; always return a list.
+
+    105_-style reports carry length-4 per-bin vectors for `k`/`energy_kept`.
+    Forcing them to scalars would average away exactly the per-bin overshoot
+    the probe exists to catch, so vectors are first-class here.
+    """
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return [value]
+
+
+def _expand_cells(cells: list[dict]) -> tuple[list[dict], list[str]]:
+    """Flatten vector-valued cells into one entry per bin. Returns (rows, errors)."""
+    rows: list[dict] = []
+    errors: list[str] = []
+    for idx, c in enumerate(cells):
+        if not isinstance(c, dict):
+            errors.append(f"cells[{idx}] is not a dict")
+            continue
+        ks = _as_vec(c.get("k"))
+        es = _as_vec(c.get("energy_kept"))
+        if len(ks) != len(es):
+            errors.append(
+                f"cells[{idx}] (arm={c.get('arm')!r}): k has {len(ks)} entries "
+                f"but energy_kept has {len(es)} — vector lengths must match")
+            continue
+        role = c.get("role")
+        if role is not None and role not in _SUBSPACE_ROLES:
+            errors.append(
+                f"cells[{idx}] role={role!r} not in {sorted(_SUBSPACE_ROLES)}")
+        for j, (k, e) in enumerate(zip(ks, es)):
+            rows.append({
+                "arm": c.get("arm"), "role": role, "seed": c.get("seed"),
+                "bin": c.get("bin", j if len(ks) > 1 else None),
+                "grid_point": c.get("grid_point"),
+                "k": k, "energy_kept": e,
+                "energy_target": c.get("energy_target"),
+                "effect": c.get("effect"), "n": c.get("n"),
+                "_cell": idx,
+            })
+    return rows, errors
+
+
+def subspace_claim_check(report: dict, *,
+                         energy_tol: float = 0.05,
+                         alpha: float = 0.05,
+                         dim_tol: float = 0.15) -> list[Finding]:
+    """㉘ Audit a submitted "the gain lives in a few input directions" claim.
+
+    ⚠️ **This is a declaration auditor, not a recomputer.** It never sees the
+    basis, the perturbation samples, or the model — only the table the claimant
+    submitted. A falsified `energy_kept` passes. C1–C4 make a consistent forgery
+    expensive (you must forge the whole manifold, not one number); they do not
+    make it impossible.
+
+    That design is deliberate: a third party's model is not in our hands, so an
+    executor could only ever audit our own claims. The auditor audits anyone's.
+
+    `report` keys (all optional — a finding fires only when its inputs exist):
+      anchor          dict  code_path (frozen|mixed|reimplemented|unknown),
+                            mixed_detail, reference, tol, n_seeds, guard_seeds
+      grid            dict  {"kind": "energy"|"k"} — absent means "no grid",
+                            which makes energy matching NOT APPLICABLE (skip),
+                            not FAILED
+      cells           list  {arm, role, seed, bin, grid_point, k, energy_kept,
+                            energy_target, effect, n} — k/energy_kept may be
+                            scalars or per-bin vectors of equal length
+      arms            dict  {arm: {"role":…, "effect_by_seed":[…]}} — the second
+                            granularity tier the paired test needs
+      bar             float the survival bar, for saturation
+      ambient_dim     int   declared ambient dimension, cross-checked by C4
+      n_basis_fit     int   samples used to fit the basis
+      basis_fit_ids   list  ids used to ESTIMATE the basis
+      effect_eval_ids list  ids used to EVALUATE the effect
+      certificate     dict  {arm: {"passed": bool, …}} for matched_null arms
+
+    Findings (all prefixed ㉘), with a priority rule: when the anchor fails,
+    `null-ladder` cannot report OK — without a reproducible anchor the ratio
+    normalizer is undefined, so the p-value sits on an unlabelled axis.
+    """
+    findings: list[Finding] = []
+    if not isinstance(report, dict):
+        return [Finding("㉘ schema", "FAIL",
+                        f"report must be a dict, got {type(report).__name__}.")]
+
+    cells_in = report.get("cells") or []
+    rows, schema_errors = _expand_cells(cells_in)
+    if schema_errors:
+        findings.append(Finding("㉘ schema", "FAIL",
+            f"{len(schema_errors)} schema problem(s): " + "; ".join(schema_errors[:4]),
+            data={"errors": schema_errors}))
+
+    roles_present = {r["role"] for r in rows if r.get("role")}
+    arms_meta = report.get("arms") or {}
+    for name, meta in arms_meta.items():
+        if isinstance(meta, dict) and meta.get("role"):
+            roles_present.add(meta["role"])
+
+    # ── ① no-anchor — a DECLARATION lint, not a reproduction verdict ─────
+    # An arbitrary user has neither our frozen functions nor our sealed
+    # baseline, so we can only ask whether the anchor was declared, and
+    # declared in a way that cannot be read two ways.
+    anchor = report.get("anchor")
+    anchor_failed = False
+    if not isinstance(anchor, dict) or not anchor:
+        anchor_failed = True
+        findings.append(Finding("㉘ no-anchor", "FAIL",
+            "No anchor block. A bit-reproduction anchor must be declared "
+            "before any ladder is read: without it the ratio normalizer is "
+            "undefined and every downstream p-value sits on an unlabelled axis."))
+    else:
+        problems: list[str] = []
+        cp = str(anchor.get("code_path", "")).strip().lower()
+        if cp not in _ANCHOR_CODE_PATHS:
+            problems.append(
+                f"code_path={anchor.get('code_path')!r} not in "
+                f"{sorted(_ANCHOR_CODE_PATHS)}")
+        if cp == "mixed" and not str(anchor.get("mixed_detail", "")).strip():
+            problems.append(
+                "code_path='mixed' requires mixed_detail naming which part is "
+                "frozen — 'mixed' alone cannot be read honestly")
+        if cp == "reimplemented" and not str(anchor.get("reference", "")).strip():
+            problems.append(
+                "code_path='reimplemented' requires a reference to what was "
+                "reimplemented against")
+        if cp == "unknown":
+            problems.append("code_path='unknown' — provenance not established")
+        if anchor.get("tol") is None:
+            problems.append("no tol declared")
+        if anchor.get("n_seeds") is None:
+            problems.append("no n_seeds declared")
+        # Separate fields on purpose: folding guard seeds into n_seeds reads as
+        # if the anchor had been verified across the whole main seed set.
+        if anchor.get("guard_seeds") is None:
+            problems.append(
+                "no guard_seeds declared (must be separate from n_seeds — "
+                "merging them overstates how widely the anchor was checked)")
+        if problems:
+            anchor_failed = True
+            findings.append(Finding("㉘ no-anchor", "FAIL",
+                f"Anchor declaration incomplete ({len(problems)}): "
+                + "; ".join(problems),
+                data={"problems": problems, "code_path": cp}))
+        else:
+            findings.append(Finding("㉘ no-anchor", "OK",
+                f"Anchor declared: code_path={cp}, tol={anchor.get('tol')!r}, "
+                f"n_seeds={anchor.get('n_seeds')}, "
+                f"guard_seeds={anchor.get('guard_seeds')}.",
+                data={"code_path": cp}))
+
+    # ── ② energy-not-matched — ABSENT vs NOT-APPLICABLE ─────────────────
+    # A report with no grid at all (104_-style) is not a failing report; it is
+    # a report this finding does not apply to. Conflating the two turns a clean
+    # case into a FAIL and misfires the FP kill.
+    grid = report.get("grid")
+    have_grid = isinstance(grid, dict) and grid.get("kind")
+    if not have_grid:
+        findings.append(Finding("㉘ energy-not-matched", "N/A",
+            "No grid declared — energy matching does not apply to this report "
+            "(this is 'not applicable', NOT 'absent and therefore failing')."))
+    else:
+        by_point: dict = {}
+        for r in rows:
+            if r["energy_kept"] is None:
+                continue
+            by_point.setdefault((r["grid_point"], r["bin"]), []).append(r)
+        worst = None
+        for key, group in sorted(by_point.items(), key=lambda kv: repr(kv[0])):
+            arms = {r["arm"] for r in group}
+            if len(arms) < 2:
+                continue
+            vals = [float(r["energy_kept"]) for r in group]
+            lo, hi = min(vals), max(vals)
+            denom = abs(hi) if hi else 1.0
+            rel = (hi - lo) / denom
+            if worst is None or rel > worst[1]:
+                worst = (key, rel)
+        if worst is None:
+            findings.append(Finding("㉘ energy-not-matched", "N/A",
+                "No grid point carries two or more arms — nothing to match."))
+        elif worst[1] > energy_tol:
+            findings.append(Finding("㉘ energy-not-matched", "FAIL",
+                f"Retained energy differs across arms at grid point {worst[0]!r}: "
+                f"relative spread {worst[1]:.4f} > tol {energy_tol}. Same k is "
+                f"NOT the same condition — re-grid on retained energy.",
+                data={"worst_point": repr(worst[0]), "rel_spread": worst[1]}))
+        else:
+            findings.append(Finding("㉘ energy-not-matched", "OK",
+                f"Retained energy matched across arms (worst relative spread "
+                f"{worst[1]:.4f} ≤ tol {energy_tol}).",
+                data={"rel_spread": worst[1]}))
+
+    # ── ③ dof-uncontrolled — severity conditioned on report completeness ──
+    # A report that is otherwise complete but omits the degrees-of-freedom
+    # control is hiding the confound (FAIL). A report that is openly partial
+    # cannot be distinguished from one whose scope never included it (WARN).
+    has_seed_vectors = any(
+        isinstance(m, dict) and m.get("effect_by_seed")
+        for m in arms_meta.values())
+    otherwise_complete = bool(have_grid and has_seed_vectors)
+    if "dof_control" in roles_present:
+        findings.append(Finding("㉘ dof-uncontrolled", "OK",
+            "A dof_control arm is present — the same-sample-count shuffled "
+            "control is declared."))
+    else:
+        lvl = "FAIL" if otherwise_complete else "WARN"
+        findings.append(Finding("㉘ dof-uncontrolled", lvl,
+            "No arm carries role='dof_control'. A gain can come from spending "
+            "more degrees of freedom rather than from any direction being "
+            "special." + ("" if otherwise_complete else
+                          " Report is partial (no grid and/or no per-seed "
+                          "vectors), so this is WARN, not FAIL — absence of "
+                          "scope is not the same as omission."),
+            data={"otherwise_complete": otherwise_complete}))
+
+    # ── ⑦ estimation-eval-overlap — closes with stdlib set algebra ───────
+    fit_ids, eval_ids = report.get("basis_fit_ids"), report.get("effect_eval_ids")
+    if fit_ids is None or eval_ids is None:
+        findings.append(Finding("㉘ estimation-eval-overlap", "WARN",
+            "basis_fit_ids / effect_eval_ids not declared — cannot tell whether "
+            "the basis was estimated on the same samples the effect is scored on."))
+    else:
+        inter = sorted(set(fit_ids) & set(eval_ids), key=repr)
+        if inter:
+            findings.append(Finding("㉘ estimation-eval-overlap", "FAIL",
+                f"{len(inter)} id(s) used BOTH to estimate the basis and to "
+                f"evaluate the effect: {inter[:8]}. The basis is then fitted to "
+                f"the noise it is later credited for.",
+                data={"overlap": inter, "n_overlap": len(inter)}))
+        else:
+            findings.append(Finding("㉘ estimation-eval-overlap", "OK",
+                f"Basis-estimation ids ({len(set(fit_ids))}) and effect-evaluation "
+                f"ids ({len(set(eval_ids))}) are disjoint.",
+                data={"n_overlap": 0}))
+
+    n_basis_fit, ambient = report.get("n_basis_fit"), report.get("ambient_dim")
+    if n_basis_fit is not None and ambient:
+        if n_basis_fit < 3 * int(ambient):
+            findings.append(Finding("㉘ underdetermined-basis", "WARN",
+                f"n_basis_fit={n_basis_fit} < 3×ambient_dim={3*int(ambient)}. "
+                f"A basis fitted from this few samples can align with noise "
+                f"directions by chance. (Declaration lint — whether it actually "
+                f"did is a property of the estimation run, which layer A "
+                f"cannot see.)",
+                data={"n_basis_fit": n_basis_fit, "ambient_dim": int(ambient)}))
+
+    # ── ⑤ vacuous — neither collapse nor survival ────────────────────────
+    matched_arms = sorted({r["arm"] for r in rows if r["role"] == "matched_null"} |
+                          {a for a, m in arms_meta.items()
+                           if isinstance(m, dict) and m.get("role") == "matched_null"},
+                          key=repr)
+    if matched_arms:
+        cert = report.get("certificate") or {}
+        failed = [a for a in matched_arms
+                  if isinstance(cert.get(a), dict) and cert[a].get("passed") is False]
+        undeclared = [a for a in matched_arms if a not in cert]
+        if failed:
+            findings.append(Finding("㉘ vacuous", "FAIL",
+                f"matched_null arm(s) {failed} did not meet their certificate. "
+                f"Such an arm counts as NEITHER collapse NOR survival — "
+                f"submitting it as evidence of collapse is the vacuous illusion.",
+                data={"failed_arms": failed}))
+        elif undeclared:
+            findings.append(Finding("㉘ vacuous", "WARN",
+                f"matched_null arm(s) {undeclared} carry no certificate — "
+                f"cannot tell a real collapse from a vacuous one.",
+                data={"undeclared_arms": undeclared}))
+        else:
+            findings.append(Finding("㉘ vacuous", "OK",
+                f"All {len(matched_arms)} matched_null arm(s) meet their certificate.",
+                data={"arms": matched_arms}))
+
+    # ── ⑥ saturation — the ladder has no resolving power left ────────────
+    bar = report.get("bar")
+    if bar is not None and have_grid:
+        null_rows = [r for r in rows
+                     if r["role"] in ("null", "matched_null") and r["effect"] is not None]
+        if null_rows:
+            points = sorted({r["grid_point"] for r in null_rows
+                             if r["grid_point"] is not None}, key=repr)
+            if points:
+                top = points[-1]
+                top_null = [float(r["effect"]) for r in null_rows if r["grid_point"] == top]
+                if top_null and min(top_null) >= float(bar):
+                    findings.append(Finding("㉘ saturation", "FAIL",
+                        f"At the top grid point {top!r} the null arm already "
+                        f"clears the bar (min null effect {min(top_null):.4f} ≥ "
+                        f"bar {float(bar):.4f}). The grid is saturated, so the "
+                        f"ladder cannot separate signal from null there.",
+                        data={"top_point": repr(top), "min_null_effect": min(top_null)}))
+                else:
+                    findings.append(Finding("㉘ saturation", "OK",
+                        f"Null arm stays below the bar at the top grid point "
+                        f"{top!r} — the ladder still resolves.",
+                        data={"top_point": repr(top)}))
+
+    # ── ④ null-ladder — paired sign-flip, with the anchor priority rule ──
+    target_arms = sorted({a for a, m in arms_meta.items()
+                          if isinstance(m, dict) and m.get("role") == "target"}, key=repr)
+    null_arms = sorted({a for a, m in arms_meta.items()
+                        if isinstance(m, dict) and m.get("role") in ("null", "matched_null")},
+                       key=repr)
+
+    def _seed_vec(arm):
+        m = arms_meta.get(arm)
+        return list(m.get("effect_by_seed") or []) if isinstance(m, dict) else []
+
+    if not target_arms or not null_arms:
+        findings.append(Finding("㉘ null-ladder", "WARN",
+            "Need at least one arm with role='target' and one with "
+            "role='null'/'matched_null' to build a ladder.",
+            data={"target_arms": target_arms, "null_arms": null_arms}))
+    elif not any(_seed_vec(a) for a in target_arms):
+        # Averaging first and permuting the average is a silent error: the
+        # test then has n=1 no matter how many seeds were run.
+        findings.append(Finding("㉘ insufficient-granularity", "WARN",
+            "No per-seed effect vector on the target arm(s). A paired "
+            "permutation test needs seed-level values; running it on an "
+            "arm mean silently reduces n to 1."))
+        findings.append(Finding("㉘ null-ladder", "WARN",
+            "Cannot run the paired test without per-seed effect vectors."))
+    else:
+        results = {}
+        for t in target_arms:
+            tv = _seed_vec(t)
+            for nl in null_arms:
+                nv = _seed_vec(nl)
+                if not nv:
+                    continue
+                m = min(len(tv), len(nv))
+                if m == 0:
+                    continue
+                diffs = [float(tv[i]) - float(nv[i]) for i in range(m)]
+                results[f"{t}|{nl}"] = {
+                    "n": m,
+                    "mean_diff": sum(diffs) / m,
+                    "p": _paired_signflip_p(diffs),
+                    "exact": m <= 14,
+                }
+        if not results:
+            findings.append(Finding("㉘ null-ladder", "WARN",
+                "No null arm carries a per-seed effect vector to pair against."))
+        else:
+            beaten = [k for k, v in results.items()
+                      if v["p"] is not None and v["p"] <= alpha and v["mean_diff"] > 0]
+            all_beaten = len(beaten) == len(results)
+            if not all_beaten:
+                findings.append(Finding("㉘ null-ladder", "FAIL",
+                    f"Target does not clear every null rung "
+                    f"({len(beaten)}/{len(results)} at α={alpha}): "
+                    + "; ".join(f"{k}: p={v['p']:.4g}, Δ={v['mean_diff']:+.4g}"
+                                for k, v in sorted(results.items())),
+                    data={"results": results}))
+            elif anchor_failed:
+                # Priority rule — the reason 103_/105_ put the anchor first and
+                # abort INVALID on failure. p is fine; the axis it sits on is not.
+                findings.append(Finding("㉘ null-ladder", "WARN",
+                    f"Target clears all {len(results)} null rung(s) at α={alpha}, "
+                    f"but the anchor FAILED — the ratio normalizer is undefined, "
+                    f"so this cannot be reported OK. Fix the anchor first.",
+                    data={"results": results, "held_by": "no-anchor"}))
+            else:
+                findings.append(Finding("㉘ null-ladder", "OK",
+                    f"Target clears all {len(results)} null rung(s) at α={alpha} "
+                    f"(paired sign-flip; exact enumeration for n ≤ 14).",
+                    data={"results": results}))
+
+    # ── C1–C4 internal-consistency laws (cost-raising, NOT a fix) ────────
+    findings.extend(_subspace_consistency(rows, ambient_dim=ambient, dim_tol=dim_tol))
+    return findings
+
+
+def _subspace_consistency(rows: list[dict], *, ambient_dim=None,
+                          dim_tol: float = 0.15) -> list[Finding]:
+    """C1–C4 — laws a truthful table satisfies internally.
+
+    These raise the price of a lie from "edit one number" to "construct a
+    consistent forgery across the whole cell manifold". A consistent forgery
+    still passes. C5 (concavity of energy in k) was tested and KILLED: 770 of
+    1431 real cells violate it, because it only holds when the sorting
+    criterion is the measuring criterion. Shipping it would have been a
+    false-positive misfire machine — do not add it back.
+    """
+    out: list[Finding] = []
+    if not rows:
+        return out
+    groups: dict = {}
+    for r in rows:
+        if r["k"] is None or r["energy_kept"] is None:
+            continue
+        groups.setdefault((r["arm"], r["seed"], r["bin"]), []).append(r)
+
+    c1 = []   # same k, different energy
+    c2 = []   # k up, energy down
+    c3 = []   # achieved below target
+    for key, g in sorted(groups.items(), key=lambda kv: repr(kv[0])):
+        by_k: dict = {}
+        for r in g:
+            by_k.setdefault(float(r["k"]), set()).add(float(r["energy_kept"]))
+        for k, es in sorted(by_k.items()):
+            if len(es) > 1:
+                c1.append(f"{key!r} k={k:g} → energies {sorted(es)}")
+        ks = sorted(by_k)
+        for a, b in zip(ks, ks[1:]):
+            if max(by_k[b]) < min(by_k[a]) - 1e-12:
+                c2.append(f"{key!r} k {a:g}→{b:g} but energy "
+                          f"{min(by_k[a]):.6g}→{max(by_k[b]):.6g}")
+        for r in g:
+            tgt = r.get("energy_target")
+            if tgt is not None and float(r["energy_kept"]) < float(tgt) - 1e-12:
+                c3.append(f"{key!r} k={r['k']} energy {float(r['energy_kept']):.6g} "
+                          f"< target {float(tgt):.6g}")
+
+    for name, viol, law in (("C1", c1, "same k ⇒ identical energy (energy = f(basis, k))"),
+                            ("C2", c2, "k increases ⇒ energy is non-decreasing"),
+                            ("C3", c3, "achieved energy ≥ declared target (minimal-k rule)")):
+        if viol:
+            out.append(Finding(f"㉘ consistency-{name}", "FAIL",
+                f"{len(viol)} violation(s) of {law}: " + "; ".join(viol[:3]),
+                data={"law": law, "violations": viol[:50], "n_violations": len(viol)}))
+
+    # C4 — the load-bearing one: a null arm's energy/k ≈ 1/d, so the table
+    # alone testifies to the ambient dimension. That puts a ceiling on what the
+    # target arm's (k, energy) pairs can claim.
+    ratios = [float(r["k"]) / float(r["energy_kept"])
+              for r in rows
+              if r["role"] in ("null", "matched_null")
+              and r["k"] not in (None, 0) and r["energy_kept"]]
+    if ratios:
+        recovered = sum(ratios) / len(ratios)
+        data = {"recovered_dim": recovered, "n_null_cells": len(ratios)}
+        if ambient_dim:
+            rel = abs(recovered - float(ambient_dim)) / float(ambient_dim)
+            data.update({"ambient_dim": float(ambient_dim), "rel_error": rel})
+            lvl = "OK" if rel <= dim_tol else "WARN"
+            out.append(Finding("㉘ consistency-C4", lvl,
+                f"Ambient dimension recovered from null arms = {recovered:.2f} "
+                f"vs declared {float(ambient_dim):.2f} (relative error {rel:.3f}, "
+                f"tol {dim_tol}).", data=data))
+        else:
+            out.append(Finding("㉘ consistency-C4", "INFO",
+                f"Ambient dimension recovered from null arms = {recovered:.2f} "
+                f"({len(ratios)} null cells). Declare ambient_dim to have this "
+                f"cross-checked.", data=data))
+    return out
+
+
+# ─────────────────────────────────────────────────────────────
 # Verification groups + verify() — the three-tier entry point
 # ─────────────────────────────────────────────────────────────
 GROUPS: dict[str, list[str]] = {
@@ -2398,6 +2924,7 @@ GROUPS: dict[str, list[str]] = {
                  "content_delta_check", "anchor_line_source_check",
                  "anchor_cell_check"],
     "negative": ["negative_audit"],
+    "subspace": ["subspace_claim_check"],
     "judge":    ["judge_consistency_check", "judge_bias_check",
                  "inter_rater_agreement", "judge_score_sanity",
                  "judge_swap_check"],
@@ -2415,6 +2942,7 @@ _SYMBOL_GROUP = {
     "⑬": "negative",
     "⑭": "judge", "⑮": "judge", "⑯": "judge", "⑰": "judge", "⑱": "judge",
     "⑲": "ranking", "⑳": "ranking",
+    "㉘": "subspace",
 }
 
 
@@ -2555,13 +3083,13 @@ def verify(ledger_path: str, data: dict, *,
 # Report printer
 # ─────────────────────────────────────────────────────────────
 def report(title: str, findings: list[Finding]) -> None:
-    icon = {"OK": "✅", "WARN": "⚠️ ", "FAIL": "🔴"}
+    icon = {"OK": "✅", "WARN": "⚠️ ", "FAIL": "🔴", "INFO": "ℹ️ ", "N/A": "➖"}
     worst = "FAIL" if any(f.level == "FAIL" for f in findings) else \
             "WARN" if any(f.level == "WARN" for f in findings) else "OK"
     print(f"\n🪞 Audit: {title}")
     print(f"   Overall: {icon[worst]} {worst}")
     for f in findings:
-        print(f"   {icon[f.level]} [{f.probe}] {f.msg}")
+        print(f"   {icon.get(f.level, 'ℹ️')} [{f.probe}] {f.msg}")
 
 
 # ─────────────────────────────────────────────────────────────

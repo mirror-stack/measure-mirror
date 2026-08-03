@@ -15,7 +15,7 @@
 > 스스로의 연구를 정직하게 죽이는 과정에서 만들어진 도구입니다.  
 > 만든 사람들이 자신에게 먼저 실행해봤습니다. → [🦋 탄생 배경](docs/CHRONICLE.md)
 
-**[📖 프로브 완전 가이드 →](docs/GUIDE_KO.md)** — 26개 프로브 전체 설명·예제·워크플로우
+**[📖 프로브 완전 가이드 →](docs/GUIDE_KO.md)** — 28개 프로브 전체 설명·예제·워크플로우
 **[📜 MIRROR-SPEC v1.1 →](docs/SPEC_KO.md)** — 원장 포맷·검증 프로토콜의 규범 명세(2026-07-02 비준·2026-07-17 개정; 이 패키지는 그 참조구현. 규범 정본은 [영어판](docs/SPEC.md))
 **[🦋 측정착시 도감 →](catalog/README_KO.md)** — 측정이 만든 이를 속인 실제 봉인 사례 46표본(게이밍·자가적발·거짓음성 가드·오염)
 
@@ -163,7 +163,7 @@ def test_my_model_is_real():
 
 ## 검증 3단계
 
-26개 프로브를 외울 필요 없습니다 — 사용법은 정확히 세 가지입니다:
+28개 프로브를 외울 필요 없습니다 — 사용법은 정확히 세 가지입니다:
 
 ```bash
 # 풀 검증 — 한 번에, 적용 가능한 모든 프로브 자동 실행
@@ -239,6 +239,15 @@ findings = mm.verify("ledger.jsonl", data, groups=["judge"])
 | Probe | # | 잡아내는 것 |
 |---|---|---|
 | `negative_audit` | ⑬ | 음성 결론에 독립 각도 부족·미등록 각도·범위 초과 탐지 |
+
+### `subspace` — "이득이 소수 방향에 있다" 류 주장
+
+⚠️ **재계산기가 아니라 선언 감사기입니다.** 제출된 표만 읽고 기저나 모델은 보지 않으므로, `energy_kept`를 거짓으로 적으면 통과합니다. 표 내부 정합 법칙 C1~C4는 거짓 표의 **비용을 올릴 뿐 구멍을 닫지 않습니다.**
+
+| 프로브 | # | 탐지 |
+|---|---|---|
+| `subspace_claim_check` | ㉘ | 비트재현 앵커 미선언 · 팔 간 잔존 에너지 불일치 · 자유도 대조 부재 · target이 널 사다리를 못 넘음(짝지은 부호뒤집기 순열검정, n ≤ 14는 2ⁿ 완전열거) · 증서 미달 `matched_null` 팔(붕괴로도 생존으로도 세지 않음) · 격자 포화 · 기저를 추정한 표본으로 효과까지 평가 |
+
 
 ### `judge` — LLM 판정자 신뢰성
 
@@ -631,7 +640,7 @@ pip install "measure-mirror[mcp]"
 
 **기타 MCP 클라이언트** — stdio 서버 명령으로 `mm-mcp`를 실행하세요.
 
-27종 probe + 6 유틸리티 + `mm_verify` 우산까지 전부 MCP 도구로 노출됩니다(총 37개):  
+28종 probe + 6 유틸리티 + `mm_verify` 우산까지 전부 MCP 도구로 노출됩니다(총 38개):  
 `mm_verify` (풀 / 그룹 필터) ·  
 `mm_register` · `mm_verify_chain` · `mm_audit` · `mm_continuous_audit` · `mm_full_audit` ·  
 `mm_baseline_fairness` · `mm_gaming_check` · `mm_leakage_check` · `mm_multiseed_check` · `mm_scope_check` ·  
@@ -639,6 +648,7 @@ pip install "measure-mirror[mcp]"
 `mm_anchor_line_source_check` · `mm_anchor_cell_check` ·  
 `mm_too_good_check` · `mm_power_check` · `mm_multiple_comparisons_check` · `mm_grim_check` ·  
 `mm_falsifiability_check` · `mm_prereg_lint` · `mm_cascade_check` · `mm_negative_audit` ·  
+`mm_subspace_claim_check` ·  
 `mm_judge_consistency_check` · `mm_judge_bias_check` · `mm_inter_rater_agreement` ·  
 `mm_judge_score_sanity` · `mm_judge_swap_check` · `mm_judge_transitivity_check` ·  
 `mm_ranking_stability_check` ·  

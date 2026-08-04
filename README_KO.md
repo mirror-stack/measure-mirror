@@ -721,6 +721,25 @@ measure-mirror/
 
 ---
 
+## 헬퍼 함수
+
+프로브와 함께 export되는 공개 API입니다. `__all__`이 이들을 약속하고 있으므로,
+소스를 읽어야 알 수 있게 두지 않고 여기 문서화합니다.
+
+| 함수 | 시그니처 | 반환 |
+|---|---|---|
+| `wilson_ci` | `wilson_ci(k, n, z=1.96)` | `n`회 중 `k`회 성공에 대한 Wilson 점수 구간 `(lo, hi)`. `audit()`이 보고된 정확도가 기준선을 실제로 넘는지 판정할 때 씁니다. `n <= 0`이면 0으로 나누지 않고 `(0.0, 1.0)`을 반환합니다. |
+| `lookup_baseline` | `lookup_baseline(task, db_dir=None)` | `db/`에 기록된 해당 과제의 기준선. 모르는 과제면 `None`. 기준선을 넘기지 않았을 때 `audit()`이 채워 넣습니다. |
+| `lookup_reproduction` | `lookup_reproduction(task, db_dir=None)` | `db/`에 기록된 이 과제의 **실패한** 재현 이력. 남들이 이미 재현에 실패한 결과를 새 증거로 읽으면 안 됩니다. |
+
+```python
+from measure_mirror import wilson_ci, lookup_baseline, lookup_reproduction
+
+lo, hi = wilson_ci(780, 1000)          # (0.7533, 0.8046)
+base = lookup_baseline("my_task")      # 기록 없으면 None
+prior = lookup_reproduction("my_task") # 실패 이력 없으면 []
+```
+
 ## 로컬 기억 (`db/`)
 
 `db/`는 **내 과거 감사의 로컬 기억**입니다 — 공유/크라우드 DB가 아닙니다.

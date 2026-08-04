@@ -7,6 +7,9 @@
 > [CHANGELOG](../CHANGELOG.md) · [CHRONICLE](CHRONICLE.md) (개발 연대기)
 >
 > **English version**: [GUIDE.md](GUIDE.md)
+>
+> **범위**: 이 가이드는 **28개 프로브** 전체를 다룹니다. 아래에 나오는 "4개 프로브"
+> 같은 표현은 특정 그룹의 **부분 수치**이지 총계가 아닙니다.
 
 ---
 

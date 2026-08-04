@@ -5,6 +5,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.29.0] — 2026-08-04
+
+### Added
+- **㉘ `subspace_claim_check` — a declaration auditor for "the gain lives in a
+  few input directions" (active-subspace-style) claims.** Layer A only: stdlib,
+  no numpy, and it never sees the basis, the perturbation samples, or the model
+  — only the table the claimant submitted. **A falsified `energy_kept` passes.**
+  That limit is structural and applies to all seven findings; the C1–C4
+  consistency laws raise the *cost* of a false table, they do not close the
+  hole. Findings: `no-anchor` · `energy-not-matched` · `dof-uncontrolled` ·
+  `null-ladder` · `vacuous` · `saturation` · `estimation-eval-overlap`, with a
+  priority rule — a failed anchor holds `null-ladder` below OK, because without
+  a reproducible anchor the ratio normalizer is undefined.
+- `_paired_signflip_p` — exact 2ⁿ enumeration for n ≤ 14, fixed-seed Monte
+  Carlo above. Deliberately not the normal approximation used elsewhere, which
+  is anti-conservative at n=10.
+- `Finding.data: dict | None` — probes attach computed numbers here instead of
+  encoding them in `msg`. ⚠️ **Breaking for `astuple`/`asdict` callers**: they
+  now yield 4 elements, so a comparison against a 3-tuple literal breaks. No
+  in-repo caller does this.
+- `eval/subspace_planted/` — two-directional planted control set built from
+  real sealed experiment output, every case labelled with `layer`
+  (real / half / synthetic / B) and `provenance`, plus a scorer with a
+  **discriminative-power gate**: a finding that gates a planted negative must
+  emit at least two distinct levels, or the run is killed.
+- `tests/test_changelog_sync.py` — the version in `pyproject.toml` must have a
+  CHANGELOG entry. This file was the one sync target no test covered.
+
+### Fixed
+- **Latent crash in `report()` and the MCP formatters.** Both indexed `icon` by
+  finding level, but the dict held only OK/WARN/FAIL while five call sites
+  already emitted `INFO` or `N/A` — any such finding reaching the printer
+  raised `KeyError`. Levels added and lookups made total.
+- Documented `wilson_ci`, `lookup_baseline` and `lookup_reproduction`, which
+  were in `__all__` (a public API promise) with zero mentions in any doc.
+- `README_KO.md` said "26개 프로브" in two places while another line said "27종
+  probe"; the count guard only matched the latter phrasing, so that drift had
+  gone unnoticed. `docs/GUIDE_KO.md` stated no total at all where the English
+  guide does.
+
+### Validation
+Two-directional judgment, pre-registered before each run, all results sealed:
+`98e993b2` 🔴 KILL (FP=2) → `3e6bd450` 🔴 KILL (FP=1) → `99a1a510` 🟢 **PASS
+22/22** on homes held out from development. Neither repair was a threshold
+change — the tolerance that caused the first kill was removed as a gate
+entirely. Both kills are pinned as regression tests. Scope left open is
+recorded in the seal, not hidden: an arm whose energy overshoot far exceeds the
+others' is undetectable, `vacuous` is validated synthetically in both
+directions, and a consistent forged table still passes.
+
+---
+
 ## [0.28.1] — 2026-07-21
 
 ### Fixed

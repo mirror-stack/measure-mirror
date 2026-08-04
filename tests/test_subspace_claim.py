@@ -221,12 +221,48 @@ def test_not_applicable_partial_report_downgrades_dof_to_warn():
     assert _lvl(subspace_claim_check(rep), "dof-uncontrolled") == "WARN"
 
 
-def test_not_applicable_energy_mismatch_still_fails_when_a_grid_exists():
+def test_not_applicable_k_locked_grid_fails_even_when_labelled_energy():
+    """The confound is a k grid wearing an energy label — every arm on the same
+    k. NOT 'achieved energies differ': k is an integer, so they always do."""
+    rep = clean_report()
+    for c in rep["cells"]:
+        c["k"] = 4                                  # same k for every arm
+    assert _lvl(subspace_claim_check(rep), "energy-not-matched") == "FAIL"
+
+
+def test_not_applicable_coincidental_k_collisions_are_not_a_k_grid():
+    """★ The regression that killed seal 3e6bd450. Arms choosing small integer
+    k do collide by chance — real 105_ has 8 of 160 compared cells k-locked.
+    Only a fraction of exactly 1.0 is a k grid; anything less is coincidence."""
+    rep = clean_report()
+    # lock k for one grid point only, leave the rest varying
+    for c in rep["cells"]:
+        if c["grid_point"] == 0.5:
+            c["k"] = 7
+    f = subspace_claim_check(rep)
+    hit = [x for x in f if x.probe.endswith("energy-not-matched")][0]
+    assert hit.level == "OK"
+    assert 0.0 < hit.data["k_locked_fraction"] < 1.0
+
+
+def test_not_applicable_declared_k_grid_fails_outright():
+    assert _lvl(subspace_claim_check(clean_report(grid={"kind": "k"})),
+                "energy-not-matched") == "FAIL"
+
+
+def test_not_applicable_unequal_achieved_energy_is_not_by_itself_a_failure():
+    """★ The regression this exists for. Real 105_ data has a 34% per-bin spread
+    between arms at target 0.1 (RANDOM 0.1203 vs GLOBAL 0.1824) because integer
+    k cannot hit a continuous energy target. Gating on that spread FAILed a
+    verbatim clean report — the false positive that killed seal 98e993b2."""
     rep = clean_report()
     for c in rep["cells"]:
         if c["arm"] == "TGT":
-            c["energy_kept"] = c["energy_kept"] * 1.5     # blow the match wide open
-    assert _lvl(subspace_claim_check(rep), "energy-not-matched") == "FAIL"
+            c["energy_kept"] = c["energy_kept"] * 1.5
+    f = subspace_claim_check(rep)
+    assert _lvl(f, "energy-not-matched") == "OK"       # k still varies per arm
+    hit = [x for x in f if x.probe.endswith("energy-not-matched")][0]
+    assert hit.data["max_energy_spread"] > 0.05        # …and the spread is reported
 
 
 # ─────────────────────────── A6 · consistency ───────────────────────────

@@ -14,6 +14,7 @@ same verdict.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -21,7 +22,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from measure_mirror import subspace_claim_check          # noqa: E402
 
-CASES = Path(__file__).resolve().parent / "cases.jsonl"
+HERE = Path(__file__).resolve().parent
+CASES = HERE / "cases.jsonl"
 
 
 def levels_by_suffix(findings) -> dict:
@@ -59,7 +61,13 @@ def score_case(case: dict) -> dict:
 
 
 def main() -> int:
-    cases = [json.loads(l) for l in CASES.read_text().splitlines() if l.strip()]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--cases", default=str(CASES),
+                    help="path to a cases jsonl (default: the development set)")
+    args = ap.parse_args()
+    path = Path(args.cases)
+    print(f"  scoring: {path.name}")
+    cases = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
     results = [score_case(c) for c in cases]
 
     layer_a = [r for r in results if r["layer"] != "B"]
@@ -81,15 +89,40 @@ def main() -> int:
         for m in r["mismatches"]:
             print(f"           ✗ {m}")
 
+    # ── discriminative-power gate ────────────────────────────────────────
+    # Learned from the KILL of seal 98e993b2: `energy-not-matched` emitted FAIL
+    # on ALL EIGHT grid-carrying cases. A constant catches every planted
+    # negative for free, so its "pass" carried no information. A finding that
+    # gates a planted negative must emit at least two distinct levels across
+    # the layer-A set, or its passes are vacuous.
+    gating = set()
+    for c in cases:
+        if c["layer"] == "B" or c["kind"] != "negative":
+            continue
+        for key, val in c["expect"].items():
+            gating.update(val.keys()) if key == "__must_not__" else gating.add(key)
+    constant = {}
+    for suffix in sorted(gating):
+        seen = {lv for r in layer_a for lv in r["levels"].get(suffix, [])}
+        if len(seen) == 1:
+            constant[suffix] = sorted(seen)
+
     n_pos = sum(r["kind"] == "positive" for r in layer_a)
     n_neg = sum(r["kind"] == "negative" for r in layer_a)
+    print(f"\n═══ discriminative power (findings that gate a planted negative) ═══")
+    for suffix in sorted(gating):
+        seen = sorted({lv for r in layer_a for lv in r["levels"].get(suffix, [])})
+        mark = "🔴 CONSTANT" if len(seen) == 1 else "✅"
+        print(f"  {mark:12} {suffix:26} levels seen: {seen}")
+
     print(f"\n  layer A: {n_pos} positive · {n_neg} negative")
-    print(f"  FP = {len(fp)}   FN = {len(fn)}")
-    verdict = "PASS" if not fp and not fn else "KILL"
+    print(f"  FP = {len(fp)}   FN = {len(fn)}   constant-findings = {len(constant)}")
+    verdict = "PASS" if not fp and not fn and not constant else "KILL"
     print(f"  VERDICT: {verdict}")
 
-    (CASES.parent / "score_output.json").write_text(
+    (path.parent / f"score_output_{path.stem}.json").write_text(
         json.dumps({"verdict": verdict, "fp": len(fp), "fn": len(fn),
+                    "constant_findings": constant,
                     "n_positive": n_pos, "n_negative": n_neg,
                     "results": results}, ensure_ascii=False, indent=2))
     return 0 if verdict == "PASS" else 1

@@ -1,6 +1,6 @@
 {
-  "verdict": "KILL",
-  "fp": 1,
+  "verdict": "PASS",
+  "fp": 0,
   "fn": 0,
   "constant_findings": {},
   "n_positive": 4,
@@ -10,10 +10,8 @@
       "id": "clean_105",
       "kind": "positive",
       "layer": "real",
-      "ok": false,
-      "mismatches": [
-        "energy-not-matched: got ['FAIL'], expected one of ['OK']"
-      ],
+      "ok": true,
+      "mismatches": [],
       "levels": {
         "consistency-C4": [
           "OK"
@@ -22,7 +20,7 @@
           "OK"
         ],
         "energy-not-matched": [
-          "FAIL"
+          "OK"
         ],
         "estimation-eval-overlap": [
           "OK"
@@ -109,7 +107,7 @@
           "OK"
         ],
         "energy-not-matched": [
-          "FAIL"
+          "OK"
         ],
         "estimation-eval-overlap": [
           "OK"
@@ -139,7 +137,7 @@
           "OK"
         ],
         "energy-not-matched": [
-          "FAIL"
+          "OK"
         ],
         "estimation-eval-overlap": [
           "OK"
@@ -169,7 +167,7 @@
           "FAIL"
         ],
         "energy-not-matched": [
-          "FAIL"
+          "OK"
         ],
         "estimation-eval-overlap": [
           "OK"
@@ -199,7 +197,7 @@
           "OK"
         ],
         "energy-not-matched": [
-          "FAIL"
+          "OK"
         ],
         "estimation-eval-overlap": [
           "OK"
@@ -229,7 +227,7 @@
           "OK"
         ],
         "energy-not-matched": [
-          "FAIL"
+          "OK"
         ],
         "estimation-eval-overlap": [
           "FAIL"

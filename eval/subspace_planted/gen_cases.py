@@ -38,6 +38,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 CASES = HERE / "cases.jsonl"
+HOLDOUT = HERE / "cases_holdout.jsonl"
 # Source results live outside the package (they are experiment output, not
 # library data). Override with FM_CDE_DIR when they sit elsewhere.
 SRC = Path(os.environ.get("FM_CDE_DIR", "/data/seara/fm_cde_followup"))
@@ -181,13 +182,23 @@ def adapt_104(res: dict, home_name: str = "v04") -> dict:
 # ─────────────────────────────────────────────────────────────
 # Planted set
 # ─────────────────────────────────────────────────────────────
-def _case(cid, kind, layer, provenance, report, expect, note=""):
-    return {"id": cid, "kind": kind, "layer": layer, "provenance": provenance,
+def _case(cid, kind, layer, provenance, report, expect, note="", sfx=""):
+    return {"id": cid + sfx, "kind": kind, "layer": layer, "provenance": provenance,
             "expect": expect, "note": note, "report": report}
 
 
-def build_cases(r103, r104, r105) -> list[dict]:
-    c105, c103, c104 = adapt_105(r105), adapt_103(r103), adapt_104(r104)
+def build_cases(r103, r104, r105, home: str = "v04") -> list[dict]:
+    """Build the full case set from one home.
+
+    `home` is a parameter so the same edit recipes can be replayed on a home
+    that development never saw. v04 was used to build and repair the probe;
+    v01 and v05 are held out. Replaying the identical recipes there is the only
+    way a later judgment carries evidence the development set can no longer
+    give.
+    """
+    c105, c103, c104 = (adapt_105(r105, home), adapt_103(r103, home),
+                        adapt_104(r104, home))
+    sfx = "" if home == "v04" else f"@{home}"
     out = []
 
     # ── planted POSITIVES — failing these is a false positive ──────────
@@ -198,7 +209,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         c105,
         {"no-anchor": ["OK"], "dof-uncontrolled": ["OK"],
          "energy-not-matched": ["OK"], "estimation-eval-overlap": ["OK"]},
-        "the main clean case"))
+        "the main clean case", sfx))
 
     out.append(_case(
         "partial_103", "positive", "real",
@@ -207,7 +218,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         c103,
         {"no-anchor": ["OK"], "dof-uncontrolled": ["WARN"],
          "estimation-eval-overlap": ["OK"]},
-        "an honest PARTIAL report: WARN is the correct answer, FAIL is a false positive"))
+        "an honest PARTIAL report: WARN is the correct answer, FAIL is a false positive", sfx))
 
     out.append(_case(
         "clean_104", "positive", "real",
@@ -216,7 +227,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "'0 vacuous + applicable certificates pass', NOT 'a vacuous example'",
         c104,
         {"no-anchor": ["OK"], "energy-not-matched": ["N/A"], "vacuous": ["OK"]},
-        "no grid ⇒ energy matching N/A. FAILing this misfires the FP kill"))
+        "no grid ⇒ energy matching N/A. FAILing this misfires the FP kill", sfx))
 
     self_null = copy.deepcopy(c105)
     self_null["arms"] = {
@@ -230,7 +241,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "numbers on both sides — a guaranteed null built without inventing one",
         self_null,
         {"null-ladder": ["FAIL", "WARN"]},
-        "an arm cannot beat itself; claiming it does would be the false positive"))
+        "an arm cannot beat itself; claiming it does would be the false positive", sfx))
 
     # ── planted NEGATIVES — passing these is a false negative ──────────
     stripped = copy.deepcopy(c105)
@@ -240,7 +251,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "105_ v04 with the anchor block deleted. Deletion only — no number touched",
         stripped,
         {"no-anchor": ["FAIL"], "null-ladder": ["WARN", "FAIL"]},
-        "★ and the ladder must NOT drop to OK underneath a failed anchor"))
+        "★ and the ladder must NOT drop to OK underneath a failed anchor", sfx))
 
     dof_gone = copy.deepcopy(c105)
     dof_gone["cells"] = [c for c in dof_gone["cells"] if c["arm"] != "LOCAL_SHUF"]
@@ -250,7 +261,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "105_ v04 with the LOCAL_SHUF arm removed. Deletion only",
         dof_gone,
         {"dof-uncontrolled": ["FAIL"]},
-        "complete in every other respect ⇒ omission, not scope ⇒ FAIL not WARN"))
+        "complete in every other respect ⇒ omission, not scope ⇒ FAIL not WARN", sfx))
 
     relabeled = copy.deepcopy(c105)
     for c in relabeled["cells"]:
@@ -267,7 +278,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         relabeled,
         {"__must_not__": {"null-ladder": ["OK"]}},
         "★ UNDECIDABLE FROM THE TABLE ALONE. The kill is not 'catch it' — it is "
-        "'do not confirm it'. Emitting OK here is the real false negative"))
+        "'do not confirm it'. Emitting OK here is the real false negative", sfx))
 
     leak = copy.deepcopy(c105)
     leak["effect_eval_ids"] = leak["basis_fit_ids"]
@@ -278,10 +289,10 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "never leaked",
         leak,
         {"estimation-eval-overlap": ["FAIL"]},
-        "half: the ids are real, the collision is manufactured"))
+        "half: the ids are real, the collision is manufactured", sfx))
 
     confound = copy.deepcopy(c103)
-    sec = r103["per_home"]["v04"]["k_grid_secondary"]
+    sec = r103["per_home"][home]["k_grid_secondary"]
     confound["cells"] = [
         {"arm": arm, "role": {"AMPLIFY": "target", "RANDOM": "null",
                               "PCA": "data_only"}[arm],
@@ -298,7 +309,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         confound,
         {"energy-not-matched": ["FAIL"]},
         "half: 103_ found and fixed this pre-seal, so it is a regression test, "
-        "not a fresh falsification"))
+        "not a fresh falsification", sfx))
 
     vac = copy.deepcopy(c104)
     worst = min(vac["certificate"], key=lambda a: 0 if vac["certificate"][a]["passed"] else 1)
@@ -312,7 +323,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "written in by hand",
         vac,
         {"vacuous": ["FAIL"]},
-        "🚨 BOTH directions of Finding `vacuous` are synthetic — see RESULTS.md"))
+        "🚨 BOTH directions of Finding `vacuous` are synthetic — see RESULTS.md", sfx))
 
     n = 10
     flat = {f"ARM{i}": {"role": "target" if i == 0 else "null",
@@ -327,7 +338,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
         "Fabricated by construction: all arms drawn from one distribution",
         signal_free,
         {"null-ladder": ["FAIL", "WARN"]},
-        "synthetic by design — a real run with no signal was never recorded"))
+        "synthetic by design — a real run with no signal was never recorded", sfx))
 
     out.append(_case(
         "overfit_smallsample", "negative", "B",
@@ -339,7 +350,7 @@ def build_cases(r103, r104, r105) -> list[dict]:
          "ambient_dim": AMBIENT_DIM, "n_basis_fit": 20},
         {"underdetermined-basis": ["WARN"]},
         "moved to layer B (executor). Scoring it as a layer-A catch would be an "
-        "over-claim"))
+        "over-claim", sfx))
 
     return out
 
@@ -361,11 +372,12 @@ REQUIRED = ("id", "kind", "layer", "provenance", "expect", "report")
 LAYERS = {"real", "half", "synthetic", "B"}
 
 
-def check() -> int:
-    if not CASES.exists():
-        print(f"✗ {CASES} missing — run without --check first")
+def check(path=None) -> int:
+    path = path or CASES
+    if not path.exists():
+        print(f"✗ {path} missing — run without --check first")
         return 1
-    cases = [json.loads(l) for l in CASES.read_text().splitlines() if l.strip()]
+    cases = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
     errs = []
     for c in cases:
         for f in REQUIRED:
@@ -395,10 +407,21 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="validate cases.jsonl instead of regenerating it")
+    ap.add_argument("--holdout", action="store_true",
+                    help="build cases_holdout.jsonl from the HELD-OUT homes "
+                         "(v01, v05) — homes development never touched")
     args = ap.parse_args()
     if args.check:
         return check()
     src = _load()
+    if args.holdout:
+        cases = []
+        for home in ("v01", "v05"):
+            cases += build_cases(src["r103"], src["r104"], src["r105"], home)
+        HOLDOUT.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n"
+                                   for c in cases))
+        print(f"  wrote {len(cases)} holdout case(s) → {HOLDOUT}")
+        return check(HOLDOUT)
     cases = build_cases(src["r103"], src["r104"], src["r105"])
     CASES.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases))
     print(f"  wrote {len(cases)} case(s) → {CASES}")

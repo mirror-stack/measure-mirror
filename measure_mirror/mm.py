@@ -2623,46 +2623,83 @@ def subspace_claim_check(report: dict, *,
         findings.append(Finding("㉘ energy-not-matched", "N/A",
             "No grid declared — energy matching does not apply to this report "
             "(this is 'not applicable', NOT 'absent and therefore failing')."))
+    elif str(grid.get("kind")).lower() == "k":
+        findings.append(Finding("㉘ energy-not-matched", "FAIL",
+            "Arms are gridded on k, not on retained energy. At a fixed k the "
+            "arms retain DIFFERENT amounts of energy, so a difference between "
+            "them is confounded with how much signal each kept. Same k is NOT "
+            "the same condition — re-grid on retained energy.",
+            data={"grid_kind": "k"}))
     else:
+        # Arms hit a shared energy target by choosing k SEPARATELY per arm (and
+        # per bin). So the signature of the confound is not "achieved energies
+        # differ" — k is an integer, so they always differ, by an amount that
+        # varies per basis and per bin. The signature is arms sharing an
+        # IDENTICAL k at a grid point while the report claims energy matching:
+        # that is a k grid wearing an energy label.
         by_point: dict = {}
         for r in rows:
-            if r["energy_kept"] is None:
+            if r["energy_kept"] is None or r["k"] is None:
                 continue
-            by_point.setdefault((r["grid_point"], r["bin"]), []).append(r)
-        worst = None
+            by_point.setdefault((r["grid_point"], r["bin"], r["seed"]), []).append(r)
+        locked, spreads = [], []
         for key, group in sorted(by_point.items(), key=lambda kv: repr(kv[0])):
-            arms = {r["arm"] for r in group}
-            if len(arms) < 2:
+            per_arm: dict = {}
+            for r in group:
+                per_arm.setdefault(r["arm"], set()).add(float(r["k"]))
+            if len(per_arm) < 2:
                 continue
             vals = [float(r["energy_kept"]) for r in group]
-            lo, hi = min(vals), max(vals)
-            denom = abs(hi) if hi else 1.0
-            rel = (hi - lo) / denom
-            if worst is None or rel > worst[1]:
-                worst = (key, rel)
-        if worst is None:
+            hi = max(vals)
+            spreads.append((hi - min(vals)) / (abs(hi) or 1.0))
+            if all(len(ks) == 1 for ks in per_arm.values()) and \
+                    len({next(iter(ks)) for ks in per_arm.values()}) == 1:
+                locked.append(f"{key!r} k={next(iter(next(iter(per_arm.values()))))}")
+        frac = (len(locked) / len(spreads)) if spreads else None
+        obs = {"max_energy_spread": max(spreads) if spreads else None,
+               "n_grid_cells_compared": len(spreads),
+               "k_locked_cells": len(locked), "k_locked_fraction": frac}
+        if not spreads:
             findings.append(Finding("㉘ energy-not-matched", "N/A",
-                "No grid point carries two or more arms — nothing to match."))
-        elif worst[1] > energy_tol:
+                "No grid cell carries two or more arms — nothing to compare.",
+                data=obs))
+        elif frac == 1.0:
+            # Threshold-free by construction: a k grid is DEFINED by every arm
+            # sharing k at every grid point. A fraction below 1 is coincidence
+            # — arms picking small integer k do collide sometimes (real 105_:
+            # 8 of 160 cells) — and calling that a k grid is reading a
+            # coincidence as a design.
             findings.append(Finding("㉘ energy-not-matched", "FAIL",
-                f"Retained energy differs across arms at grid point {worst[0]!r}: "
-                f"relative spread {worst[1]:.4f} > tol {energy_tol}. Same k is "
-                f"NOT the same condition — re-grid on retained energy.",
-                data={"worst_point": repr(worst[0]), "rel_spread": worst[1]}))
+                f"Grid declares energy matching, but EVERY arm shares the same "
+                f"k in EVERY one of the {len(spreads)} compared cell(s) "
+                f"(e.g. {locked[0]}). That is the definition of a k grid — "
+                f"this one is wearing an energy label. At fixed k the arms "
+                f"retain different amounts of energy, so any difference "
+                f"between them is confounded.",
+                data={**obs, "examples": locked[:5]}))
         else:
             findings.append(Finding("㉘ energy-not-matched", "OK",
-                f"Retained energy matched across arms (worst relative spread "
-                f"{worst[1]:.4f} ≤ tol {energy_tol}).",
-                data={"rel_spread": worst[1]}))
+                f"Energy grid: k varies across arms in "
+                f"{len(spreads) - len(locked)} of {len(spreads)} compared "
+                f"cell(s) (k-locked fraction {frac:.3f} < 1.0 = coincidence, "
+                f"not design), and achieved energy meets the declared target "
+                f"(see consistency-C3). Observed max spread of achieved energy "
+                f"{obs['max_energy_spread']:.4f} — reported, NOT gated: k is "
+                f"an integer, so the overshoot above a continuous target "
+                f"differs per basis and per bin and cannot be held to a fixed "
+                f"tolerance.",
+                data=obs))
 
     # ── ③ dof-uncontrolled — severity conditioned on report completeness ──
     # A report that is otherwise complete but omits the degrees-of-freedom
     # control is hiding the confound (FAIL). A report that is openly partial
     # cannot be distinguished from one whose scope never included it (WARN).
-    has_seed_vectors = any(
-        isinstance(m, dict) and m.get("effect_by_seed")
-        for m in arms_meta.values())
-    otherwise_complete = bool(have_grid and has_seed_vectors)
+    # Completeness is measured at CELL level, not arm level: a partial report
+    # can still carry an arm-level per-seed effect vector (103_ does) while its
+    # grid records only aggregates. What separates the two is whether the cells
+    # themselves are per-seed.
+    has_cell_seeds = any(r.get("seed") is not None for r in rows)
+    otherwise_complete = bool(have_grid and has_cell_seeds)
     if "dof_control" in roles_present:
         findings.append(Finding("㉘ dof-uncontrolled", "OK",
             "A dof_control arm is present — the same-sample-count shuffled "

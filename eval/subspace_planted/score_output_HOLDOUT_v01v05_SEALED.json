@@ -1,0 +1,700 @@
+{
+  "verdict": "PASS",
+  "fp": 0,
+  "fn": 0,
+  "constant_findings": {},
+  "n_positive": 8,
+  "n_negative": 14,
+  "results": [
+    {
+      "id": "clean_105@v01",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "partial_103@v01",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "clean_104@v01",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "vacuous": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "self_null@v01",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "anchor_stripped@v01",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "FAIL"
+        ],
+        "null-ladder": [
+          "WARN"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "dof_missing@v01",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "FAIL"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "relabeled_dof@v01",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "estimation_eval_leak@v01",
+      "kind": "negative",
+      "layer": "half",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "energy_confound@v01",
+      "kind": "negative",
+      "layer": "half",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "FAIL"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "vacuous_as_collapse@v01",
+      "kind": "negative",
+      "layer": "synthetic",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "vacuous": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "signal_free@v01",
+      "kind": "negative",
+      "layer": "synthetic",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "overfit_smallsample@v01",
+      "kind": "negative",
+      "layer": "B",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "WARN"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "WARN"
+        ],
+        "underdetermined-basis": [
+          "WARN"
+        ]
+      }
+    },
+    {
+      "id": "clean_105@v05",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "partial_103@v05",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "clean_104@v05",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "vacuous": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "self_null@v05",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "anchor_stripped@v05",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "FAIL"
+        ],
+        "null-ladder": [
+          "WARN"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "dof_missing@v05",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "FAIL"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "relabeled_dof@v05",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "estimation_eval_leak@v05",
+      "kind": "negative",
+      "layer": "half",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "energy_confound@v05",
+      "kind": "negative",
+      "layer": "half",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "FAIL"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "vacuous_as_collapse@v05",
+      "kind": "negative",
+      "layer": "synthetic",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "vacuous": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "signal_free@v05",
+      "kind": "negative",
+      "layer": "synthetic",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "OK"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "overfit_smallsample@v05",
+      "kind": "negative",
+      "layer": "B",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "WARN"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "WARN"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "WARN"
+        ],
+        "underdetermined-basis": [
+          "WARN"
+        ]
+      }
+    }
+  ]
+}

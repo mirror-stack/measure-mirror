@@ -140,6 +140,49 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="mm_subspace_claim_check",
+            description=(
+                "㉘ Audit a submitted 'the gain lives in a few input directions' "
+                "(active-subspace-style) claim. ⚠️ THIS IS A DECLARATION AUDITOR, "
+                "NOT A RECOMPUTER — it reads the submitted table only, never the "
+                "basis or the model, so a falsified energy_kept passes. The C1–C4 "
+                "consistency laws raise the cost of a false table; they do not "
+                "close the hole. "
+                "Findings: no-anchor (declaration lint) · energy-not-matched · "
+                "dof-uncontrolled · null-ladder (paired sign-flip; exact 2ⁿ "
+                "enumeration for n ≤ 14) · vacuous · saturation · "
+                "estimation-eval-overlap. Priority rule: when the anchor FAILs the "
+                "null-ladder cannot report OK, because the ratio normalizer is "
+                "undefined. A report with no grid yields N/A for energy matching, "
+                "which is NOT a failure."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "report":      {"type": "object",
+                                    "description":
+                                    "Submitted claim table: anchor, grid, cells "
+                                    "(arm/role/seed/grid_point/k/energy_kept/effect; "
+                                    "k and energy_kept may be per-bin vectors), arms "
+                                    "(with effect_by_seed), bar, ambient_dim, "
+                                    "n_basis_fit, basis_fit_ids, effect_eval_ids, "
+                                    "certificate. Roles: target · null · data_only · "
+                                    "dof_control · matched_null"},
+                    "energy_tol":  {"type": "number", "default": 0.05,
+                                    "description":
+                                    "Max relative spread of retained energy across "
+                                    "arms at one grid point"},
+                    "alpha":       {"type": "number", "default": 0.05,
+                                    "description": "Significance level for the ladder"},
+                    "dim_tol":     {"type": "number", "default": 0.15,
+                                    "description":
+                                    "Tolerance for C4 recovered-vs-declared "
+                                    "ambient dimension"},
+                },
+                "required": ["report"],
+            },
+        ),
+        types.Tool(
             name="mm_negative_audit",
             description=(
                 "⑬ Gate a Resolved-Negative conclusion: angle-count gate + optional scope check. "
@@ -826,18 +869,18 @@ async def list_tools() -> list[types.Tool]:
 # Tool execution
 # ─────────────────────────────────────────────────────────────
 def _findings_to_text(findings: list[mm.Finding]) -> str:
-    icon = {"OK": "✅", "WARN": "⚠️", "FAIL": "🔴"}
+    icon = {"OK": "✅", "WARN": "⚠️", "FAIL": "🔴", "INFO": "ℹ️", "N/A": "➖"}
     worst = "FAIL" if any(f.level == "FAIL" for f in findings) else \
             "WARN" if any(f.level == "WARN" for f in findings) else "OK"
     lines = [f"Overall: {icon[worst]} {worst}"]
     for f in findings:
-        lines.append(f"{icon[f.level]} [{f.probe}] {f.msg}")
+        lines.append(f"{icon.get(f.level, 'ℹ️')} [{f.probe}] {f.msg}")
     return "\n".join(lines)
 
 
 def _single(f: mm.Finding) -> str:
-    icon = {"OK": "✅", "WARN": "⚠️", "FAIL": "🔴"}
-    return f"{icon[f.level]} [{f.probe}] {f.msg}"
+    icon = {"OK": "✅", "WARN": "⚠️", "FAIL": "🔴", "INFO": "ℹ️", "N/A": "➖"}
+    return f"{icon.get(f.level, 'ℹ️')} [{f.probe}] {f.msg}"
 
 
 @server.call_tool()
@@ -894,6 +937,14 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             result = _single(mm.cascade_check(
                 arguments["ledger_path"],
                 arguments["claim_id"],
+            ))
+
+        elif name == "mm_subspace_claim_check":
+            result = _findings_to_text(mm.subspace_claim_check(
+                arguments["report"],
+                energy_tol=arguments.get("energy_tol", 0.05),
+                alpha=arguments.get("alpha", 0.05),
+                dim_tol=arguments.get("dim_tol", 0.15),
             ))
 
         elif name == "mm_negative_audit":

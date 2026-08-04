@@ -784,6 +784,26 @@ measure-mirror/
 
 ---
 
+## Helper Functions
+
+Exported alongside the probes. They are part of the public API — `__all__`
+promises them — so they are documented here rather than left to be discovered
+by reading the source.
+
+| Function | Signature | Returns |
+|---|---|---|
+| `wilson_ci` | `wilson_ci(k, n, z=1.96)` | Wilson score interval `(lo, hi)` for `k` successes in `n` trials. Used by `audit()` to decide whether a reported accuracy actually clears its baseline. Returns `(0.0, 1.0)` when `n <= 0` rather than dividing by zero. |
+| `lookup_baseline` | `lookup_baseline(task, db_dir=None)` | The recorded baseline for a task from `db/`, or `None` when the task is unknown. Lets `audit()` fill in a baseline you did not pass. |
+| `lookup_reproduction` | `lookup_reproduction(task, db_dir=None)` | Prior **failed** reproductions recorded for this task in `db/`. A result that others already failed to reproduce should not be read as fresh evidence. |
+
+```python
+from measure_mirror import wilson_ci, lookup_baseline, lookup_reproduction
+
+lo, hi = wilson_ci(780, 1000)          # (0.7533, 0.8046)
+base = lookup_baseline("my_task")      # None if never recorded
+prior = lookup_reproduction("my_task") # [] when nothing failed before
+```
+
 ## Local Memory (`db/`)
 
 `db/` is your **local memory of past audits** — not a shared/crowd database.

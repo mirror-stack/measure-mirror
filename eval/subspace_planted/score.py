@@ -120,6 +120,9 @@ def main() -> int:
     verdict = "PASS" if not fp and not fn and not constant else "KILL"
     print(f"  VERDICT: {verdict}")
 
+    # NOTE: filenames here are written by the run; the committed artifacts
+    # were renamed to say which judgment each one is, because "score_output.json"
+    # gave no way to tell a killed run from a sealed pass.
     (path.parent / f"score_output_{path.stem}.json").write_text(
         json.dumps({"verdict": verdict, "fp": len(fp), "fn": len(fn),
                     "constant_findings": constant,

@@ -19,6 +19,12 @@ my_model.json
 *promo*
 *PROMO*
 
+# ...단, 도감 항목은 이 규칙에서 제외한다.
+# `*promo*`는 경로 어디든 매칭되므로 `bug_derived_headroom_promoted_to_target.md`
+# 같은 정상 항목을 조용히 삼켰다(07-27 작성 → 커밋된 적 없음, `git status`에도
+# 안 뜸). 무시된 파일은 미추적으로도 안 보이므로 개수를 세기 전엔 드러나지 않는다.
+!catalog/**
+
 # 도감 표본 초안 (catalog/draft_specimen.py 산출) — 사람이 완성·검증 전엔 커밋 금지.
 # 완성되면 .DRAFT.md → .md 로 승격해 정식 항목이 된다.
 *.DRAFT.md

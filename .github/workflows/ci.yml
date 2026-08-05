@@ -17,7 +17,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install (with test extras)
-        run: pip install -e ".[test]"
+        # subspace = layer B (numpy). Installed here on purpose: without it the
+        # layer-B runner tests skip and would ship unexercised by CI.
+        run: pip install -e ".[test,subspace]"
       - name: Run tests
         run: pytest -v
       - name: Dogfood — measure-mirror audits its own examples

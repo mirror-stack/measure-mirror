@@ -6,11 +6,11 @@
 
 [![CI](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml/badge.svg)](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![deps: zero](https://img.shields.io/badge/deps-zero-brightgreen.svg)](pyproject.toml)
+[![core deps: zero](https://img.shields.io/badge/core%20deps-zero-brightgreen.svg)](pyproject.toml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
 **AI 평가 주장의 거짓양성과 거짓음성을 자동으로 적발합니다.**  
-훈련 불요 · 결정론적 · 코어 무의존 (Python 3.10+ stdlib; `judge` 모듈만 옵션).
+훈련 불요 · 결정론적 · 코어는 stdlib만 사용 (Python 3.10+). 선택 모듈 `judge`·`subspace`는 의존성이 있습니다.
 
 > 스스로의 연구를 정직하게 죽이는 과정에서 만들어진 도구입니다.  
 > 만든 사람들이 자신에게 먼저 실행해봤습니다. → [🦋 탄생 배경](docs/CHRONICLE.md)
@@ -65,11 +65,12 @@ Measurement Mirror는 이것들을 **구조적으로** 잡아냅니다. 의견�
 ## 설치
 
 ```bash
-pip install -e .                        # 코어 (외부 의존성 없음)
+pip install -e .                        # 코어 — stdlib만, 외부 의존성 없음
 pip install -e ".[mcp]"                 # + AI 에이전트용 MCP 서버
 pip install -e ".[judge]"               # + LLM-as-a-Judge 러너 (openai / anthropic)
+pip install -e ".[subspace]"            # + ㉘ 부분공간 실행기 = B층 (numpy)
 pip install -e ".[test]"                # + pytest 플러그인
-pip install -e ".[mcp,judge,test]"      # 전부
+pip install -e ".[mcp,judge,subspace,test]"   # 전부
 ```
 
 CLI 진입점: `mm`  
@@ -247,6 +248,39 @@ findings = mm.verify("ledger.jsonl", data, groups=["judge"])
 | 프로브 | # | 탐지 |
 |---|---|---|
 | `subspace_claim_check` | ㉘ | 비트재현 앵커 미선언 · 팔 간 잔존 에너지 불일치 · 자유도 대조 부재 · target이 널 사다리를 못 넘음(짝지은 부호뒤집기 순열검정, n ≤ 14는 2ⁿ 완전열거) · 증서 미달 `matched_null` 팔(붕괴로도 생존으로도 세지 않음) · 격자 포화 · 기저를 추정한 표본으로 효과까지 평가 |
+
+#### ㉘ B층 — 실행기 (`measure_mirror.subspace`, numpy 필요)
+
+```bash
+pip install "measure-mirror[subspace]"
+```
+
+A층은 제출된 표를 감사합니다. **B층은 배열에서 그 표를 만들어** 곧바로 A층에 돌려줍니다 —
+내 실행도 남의 주장과 똑같은 감사기 앞에 세우는 것입니다. B층이 A층을 대체하지 않고,
+A층이 볼 수 있는 범위를 넓히지도 않습니다.
+
+|  | A층 — `subspace_claim_check` | B층 — `measure_mirror.subspace` |
+|---|---|---|
+| 보는 것 | 제출된 표뿐 | 배열 |
+| 의존성 | stdlib | numpy |
+| 감사 대상 | 누구의 주장이든 | 내가 직접 돌린 것만 |
+| 못 잡는 것 | 정합적 위조표 | 자기가 돌리지 않은 모든 것 |
+
+B층만 할 수 있는 두 가지 — 표에는 담길 수 없는 것들입니다.
+
+- **내용주소 표본 id.** `basis_fit_ids`·`effect_eval_ids`는 각 행의 float64 바이트 sha256이지
+  위치 라벨이 아닙니다. 그래서 `estimation-eval-overlap`이 **실제 재사용**을 검사하고,
+  분할 이름만 바꿔서는 빠져나갈 수 없습니다.
+- **`overfit_smallsample`.** A층은 선언된 `n_basis_fit`으로 `underdetermined-basis`를 **린트**할
+  뿐입니다. 그 정도 표본으로 뽑은 기저가 *실제로* 잡음 방향에 정렬됐는지는 추정 실행의 속성이라
+  표가 담을 수 없습니다. B층은 그것을 직접 돌립니다: 합성 등방 가우시안·신호 0·
+  `n_basis ∈ {20, 50, 200}`에서 target 팔이 널 사다리를 넘으면 안 됩니다.
+  **양성대조를 모든 `n`에서 돌립니다** — 안 그러면 "n=20에서 안 이겼다"와
+  "계기가 n=20에서 눈이 멀었다"가 구분되지 않습니다. 양성대조가 안 터진 `n`은 통과로 세지 않고
+  **보류(withheld)**로 보고합니다.
+
+이 둘은 `verify()` probe가 아니라 실행기이므로 위 probe 개수에 **의도적으로 포함하지 않습니다**.
+
 
 
 ### `judge` — LLM 판정자 신뢰성
@@ -689,9 +723,10 @@ python examples/demo_field.py    # Field 후보 거짓양성
 ```
 measure-mirror/
 ├── measure_mirror/
-│   ├── mm.py              # verify() + probe ①~㉗ + CLI + DB 조회 (의존성 없음)
+│   ├── mm.py              # verify() + probe ①~㉘ + CLI + DB 조회 (stdlib만)
 │   ├── mcp_server.py      # MCP 서버 — 37개 도구 (pip install .[mcp])
 │   ├── judge.py           # LLM-as-a-Judge 러너 (pip install .[judge])
+│   ├── subspace.py        # ㉘ B층 실행기 — numpy (pip install .[subspace])
 │   └── pytest_plugin.py   # assert_clean() — CI 게이트
 ├── docs/
 │   ├── GUIDE.md           # 프로브 완전 가이드 (영문)
@@ -807,7 +842,11 @@ mm.catch_history(source="fm_cde_pixel_feasibility")  # 특정 아크 관련
 
 ## 설계 원칙
 
-- **외부 의존성 없음** — 순수 Python stdlib. 설치할 것도 깨질 것도 없음.
+- **코어는 stdlib만** — 범위를 붙여서 말합니다. 선택 모듈 `judge`는 openai/anthropic,
+  선택 모듈 `subspace`(㉘ **B층**)는 numpy를 씁니다. **stdlib 전용인 것은 코어와 A층
+  감사기들이지 패키지 전체가 아닙니다** — 그 단서를 떼고 "의존성 0"이라고만 말하는 것이
+  도감 항목 [zero-dep-scope-overgeneralize](catalog/self-catch/zero-dep-scope-overgeneralize.md)가
+  기록한 과대일반화이고, 바로 이 문서에서 한 번 적발됐습니다.
 - **양방향 감지** — 거짓 *양성* **과** 거짓 *음성* 모두 잡음. 성급한 음성 종결도 착시임.
 - **위변조 감지 사전등록** — 첫 쓰기에 SHA-256 봉인. 재등록은 무시됨. 원장 조작은 매 감사마다 감지됨.
 - **독립적 probe** — 각 검사는 독립 함수. 기존 코드 건드리지 않고 새 검사 추가 가능.

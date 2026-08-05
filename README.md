@@ -6,18 +6,18 @@
 
 [![CI](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml/badge.svg)](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![deps: zero](https://img.shields.io/badge/deps-zero-brightgreen.svg)](pyproject.toml)
+[![core deps: zero](https://img.shields.io/badge/core%20deps-zero-brightgreen.svg)](pyproject.toml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
 **Catch AI evaluation illusions — false positives and false negatives — automatically.**  
-Zero training · Deterministic · Zero-dep core (Python 3.10+ stdlib; `judge` module optional).
+Zero training · Deterministic · Stdlib-only core (Python 3.10+; the `judge` and `subspace` modules are optional and do have dependencies).
 
 > Built while honestly killing our own project.  
 > The makers ran it on themselves first. → [🦋 Origin Story](docs/CHRONICLE.md)
 
 **[📖 Full Probe Guide →](docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
 **[📜 MIRROR-SPEC v1.1 →](docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
-**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 67 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
+**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 70 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
 
 > **🪞🔎🪪 New — Mirror Stack** ([`stack/`](stack/)): measure-mirror is the *claims* layer of a
 > three-mirror integrity stack for autonomous research agents (claims · actions · provenance,
@@ -68,11 +68,12 @@ Measurement Mirror catches these **structurally**, not by opinion.
 ## Install
 
 ```bash
-pip install -e .                        # core (zero deps)
+pip install -e .                        # core — stdlib only, no dependencies
 pip install -e ".[mcp]"                 # + MCP server for AI agents
 pip install -e ".[judge]"               # + LLM-as-a-Judge runner (openai / anthropic)
+pip install -e ".[subspace]"            # + subspace executor, layer B (numpy)
 pip install -e ".[test]"                # + pytest plugin
-pip install -e ".[mcp,judge,test]"      # everything
+pip install -e ".[mcp,judge,subspace,test]"   # everything
 ```
 
 CLI entry point: `mm`  
@@ -271,6 +272,51 @@ extra keys fire extra probes. The `data` keys are identical to the JSON file for
 | Probe | # | Catches |
 |---|---|---|
 | `subspace_claim_check` | ㉘ | Undeclared bit-reproduction anchor · retained energy not matched across arms · missing degrees-of-freedom control · target not clearing the null ladder (paired sign-flip, exact 2ⁿ for n ≤ 14) · a `matched_null` arm that fails its certificate (neither collapse nor survival) · a saturated grid · the basis estimated on the very samples the effect is scored on |
+
+#### ㉘ layer B — the executor (`measure_mirror.subspace`, needs numpy)
+
+```bash
+pip install "measure-mirror[subspace]"
+```
+
+Layer A audits a table. **Layer B produces one from the arrays**, then hands it
+straight back to layer A — so your own run is judged by the same auditor a
+stranger's claim is. It does not supersede layer A and does not widen what
+layer A can see.
+
+|  | layer A — `subspace_claim_check` | layer B — `measure_mirror.subspace` |
+|---|---|---|
+| sees | the submitted table only | the arrays |
+| dependencies | stdlib | numpy |
+| audits | anyone's claim | only your own run |
+| cannot catch | a consistent forgery | anything it did not itself run |
+
+```python
+from measure_mirror.subspace import build_subspace_report, overfit_smallsample
+from measure_mirror import subspace_claim_check
+
+report   = build_subspace_report(data_by_seed, arms=arms, effect_fn=my_effect,
+                                 energy_targets=(0.5, 0.7, 0.9), anchor=anchor)
+findings = subspace_claim_check(report)         # layer A audits layer B
+```
+
+Two things layer B can do that a table cannot encode:
+
+- **Content-addressed sample ids.** `basis_fit_ids` / `effect_eval_ids` are
+  sha256 of each row's float64 bytes, not positional labels — so
+  `estimation-eval-overlap` tests whether the same rows were actually reused,
+  which renaming a split cannot defeat.
+- **`overfit_smallsample`** — layer A can only *lint* `underdetermined-basis`
+  from a declared `n_basis_fit`; whether a basis fitted from that few samples
+  really aligned with noise is a property of the estimation run. Layer B runs
+  it: synthetic isotropic Gaussians, signal 0, `n_basis ∈ {20, 50, 200}`, and
+  the target arm must not clear the null ladder. **A positive control runs at
+  every `n`** — without it, "the target did not win at n=20" is
+  indistinguishable from "the instrument is blind at n=20", and any `n` whose
+  positive control fails is reported *withheld*, never counted as a pass.
+
+These are executors, not `verify()` probes, and are deliberately not counted in
+the probe registry above.
 
 
 ### `judge` — LLM-judge reliability
@@ -752,9 +798,10 @@ python examples/demo_field.py    # Field candidate false positives
 ```
 measure-mirror/
 ├── measure_mirror/
-│   ├── mm.py              # verify() + probes ①~㉗ + CLI + DB lookup (zero deps)
+│   ├── mm.py              # verify() + probes ①~㉘ + CLI + DB lookup (stdlib only)
 │   ├── mcp_server.py      # MCP server — 37 tools (pip install .[mcp])
 │   ├── judge.py           # LLM-as-a-Judge runner (pip install .[judge])
+│   ├── subspace.py        # ㉘ layer B executor — numpy (pip install .[subspace])
 │   └── pytest_plugin.py   # assert_clean() for CI gates
 ├── docs/
 │   ├── GUIDE.md           # full per-probe reference (English)
@@ -875,7 +922,7 @@ reproduces the recorded verdict with **0 mismatches**.
 
 ## Design Principles
 
-- **Zero-dep core** — pure Python stdlib. The optional `judge` module adds openai/anthropic for LLM-as-a-Judge; nothing else, nothing in the core.
+- **Stdlib-only core** — pure Python stdlib, no dependencies. Say it with its scope attached: the optional `judge` module adds openai/anthropic, and the optional `subspace` module (㉘ **layer B**) adds numpy. **Stdlib-only describes the core and every layer-A auditor, not the whole package** — collapsing that into a bare "zero deps" headline is the overgeneralisation catalogued in [zero-dep-scope-overgeneralize](catalog/self-catch/zero-dep-scope-overgeneralize.md), caught on this very README.
 - **Bidirectional** — catches false *positives* **and** false *negatives*. Premature negative closures are also illusions.
 - **Tamper-evident pre-registration** — SHA-256 seal on first write. Only the *first* sealed registration for a `claim_id` counts in `audit()`; a later re-registration is still appended to the chain (the record is never silently dropped) but cannot override the original. Ledger tampering is detected on every audit.
 - **Independent probes** — each check is a standalone function. Add new ones without touching existing code.

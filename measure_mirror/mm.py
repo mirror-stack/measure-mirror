@@ -2543,18 +2543,18 @@ def subspace_claim_check(report: dict, *,
     `null-ladder` cannot report OK — without a reproducible anchor the ratio
     normalizer is undefined, so the p-value sits on an unlabelled axis.
 
-    🔴 **No guard against a swapped-role claim.** If a report labels its
-    degrees-of-freedom control as the target and the real target as the control,
-    nothing here detects it: the table alone does not say which arm was the
-    treatment, and `null-ladder` will confirm the swap whenever the control
-    happens to beat the null. The planted set's `relabeled_dof` case passed on
-    FM×CDE only because the shuffled arm did not beat the null *there* — that
-    pass was a property of the substrate, not a mechanism in this function. On a
-    second substrate (sealed `5c78e503`, result am `2ab6eab7`: 768-d DINO
-    embeddings, where a column-shuffled basis beats a random one because
-    shuffling preserves the per-dimension marginals that carry the signal) the
-    same case is a confirmed false negative. See
-    `eval/subspace_substrate2/RESULTS.md`.
+    ⚠️ **Swapped-role claims are guarded only partly, by
+    `dof-outperforms-target`.** The table alone does not say which arm was the
+    treatment. What it does say is that destroying the claimed structure cannot
+    ADD effect, so a control that beats its target is incoherent — that law is
+    the guard, and it holds `null-ladder` below OK when it fires. It catches the
+    swap only when the true target genuinely beats its control; when the two are
+    indistinguishable the swap stays invisible, and so does the effect it would
+    hide. There was no guard at all until substrate-2 exposed the gap (seal
+    `5c78e503`): the `relabeled_dof` case had passed on FM×CDE only because the
+    shuffled arm did not beat the null *there*, which was substrate luck rather
+    than a mechanism. The law is sealed on the FM×CDE holdout at 22/22
+    (`582f4130`, result am `45d5f3d2`). See `eval/subspace_substrate2/RESULTS.md`.
     """
     findings: list[Finding] = []
     if not isinstance(report, dict):
@@ -2809,7 +2809,6 @@ def subspace_claim_check(report: dict, *,
                         f"{top!r} — the ladder still resolves.",
                         data={"top_point": repr(top)}))
 
-    # ── ④ null-ladder — paired sign-flip, with the anchor priority rule ──
     target_arms = sorted({a for a, m in arms_meta.items()
                           if isinstance(m, dict) and m.get("role") == "target"}, key=repr)
     null_arms = sorted({a for a, m in arms_meta.items()
@@ -2820,6 +2819,44 @@ def subspace_claim_check(report: dict, *,
         m = arms_meta.get(arm)
         return list(m.get("effect_by_seed") or []) if isinstance(m, dict) else []
 
+    # ⬆ arm vectors are read by BOTH the coherence law below and the null
+    #   ladder, so they are resolved once, before either.
+
+    # ── ⑧ dof-outperforms-target — a coherence law, not a variance heuristic ──
+    # A degrees-of-freedom control is the target's own procedure with the
+    # claimed structure destroyed. Destroying the structure cannot ADD effect.
+    # So a truthful table satisfies effect(dof_control) <= effect(target), and a
+    # table that violates it is incoherent in one of exactly two ways, both of
+    # which the reader needs to know: the role labels are swapped, or the arm
+    # called a control is not one. Either way the report must not be read as a
+    # confirmed win.
+    #
+    # ⚠️ What this deliberately is NOT: a rule that the target must be the
+    # variance-optimal basis. That was the first idea and it is a category
+    # error — a target arm is a hypothesis about where the EFFECT lives, not
+    # where the variance lives, and 103_ labels its PCA arm `data_only` for
+    # exactly that reason. Such a rule would FAIL honest reports whose treatment
+    # is not the leading principal subspace.
+    dof_arms = sorted({a for a, m in arms_meta.items()
+                       if isinstance(m, dict) and m.get("role") == "dof_control"},
+                      key=repr)
+    dof_pairs = {}
+    for t in target_arms:
+        tv = _seed_vec(t)
+        for dc in dof_arms:
+            dv = _seed_vec(dc)
+            m = min(len(tv), len(dv))
+            if m == 0:
+                continue
+            diffs = [float(dv[i]) - float(tv[i]) for i in range(m)]
+            dof_pairs[f"{dc}|{t}"] = {
+                "n": m, "mean_excess": sum(diffs) / m,
+                "p": _paired_signflip_p(diffs), "exact": m <= 14}
+    dof_violated = bool([k for k, v in dof_pairs.items()
+                        if v['mean_excess'] > 0 and v['p'] is not None
+                        and v['p'] <= alpha])
+
+    # ── ④ null-ladder — paired sign-flip, with the anchor priority rule ──
     if not target_arms or not null_arms:
         findings.append(Finding("㉘ null-ladder", "WARN",
             "Need at least one arm with role='target' and one with "
@@ -2866,6 +2903,18 @@ def subspace_claim_check(report: dict, *,
                     + "; ".join(f"{k}: p={v['p']:.4g}, Δ={v['mean_diff']:+.4g}"
                                 for k, v in sorted(results.items())),
                     data={"results": results}))
+            elif dof_violated:
+                # Same priority shape as the anchor rule below: the ladder's
+                # arithmetic is fine, but a report whose control beats its
+                # treatment has not established which arm the treatment is, so
+                # OK here would certify a comparison that was never made. A
+                # consumer reading only this finding must not see a green light.
+                findings.append(Finding("㉘ null-ladder", "WARN",
+                    f"Target clears all {len(results)} null rung(s) at α={alpha}, "
+                    f"but a dof_control arm outperforms the target — see "
+                    f"dof-outperforms-target. Which arm is the treatment is not "
+                    f"established, so this cannot be reported OK.",
+                    data={"results": results, "held_by": "dof-outperforms-target"}))
             elif anchor_failed:
                 # Priority rule — the reason 103_/105_ put the anchor first and
                 # abort INVALID on failure. p is fine; the axis it sits on is not.
@@ -2879,6 +2928,42 @@ def subspace_claim_check(report: dict, *,
                     f"Target clears all {len(results)} null rung(s) at α={alpha} "
                     f"(paired sign-flip; exact enumeration for n ≤ 14).",
                     data={"results": results}))
+
+    if dof_pairs:
+        beaten = {k: v for k, v in dof_pairs.items()
+                  if v["mean_excess"] > 0 and v["p"] is not None and v["p"] <= alpha}
+        leading = {k: v for k, v in dof_pairs.items()
+                   if v["mean_excess"] > 0 and k not in beaten}
+        if beaten:
+            findings.append(Finding("㉘ dof-outperforms-target", "FAIL",
+                f"A dof_control arm outperforms the target it controls for "
+                f"({len(beaten)}/{len(dof_pairs)} pair(s) at α={alpha}): "
+                + "; ".join(f"{k}: Δ={v['mean_excess']:+.4g}, p={v['p']:.4g}"
+                            for k, v in sorted(beaten.items()))
+                + ". Destroying the claimed structure cannot add effect, so "
+                  "either the role labels are swapped or the arm declared a "
+                  "control is not one. This report cannot be read as a "
+                  "confirmed win regardless of what the null ladder says.",
+                data={"pairs": dof_pairs, "violating": sorted(beaten)}))
+        elif leading:
+            findings.append(Finding("㉘ dof-outperforms-target", "WARN",
+                f"A dof_control arm leads its target on the mean but not "
+                f"significantly ({len(leading)}/{len(dof_pairs)} pair(s), "
+                f"α={alpha}): "
+                + "; ".join(f"{k}: Δ={v['mean_excess']:+.4g}, p={v['p']:.4g}"
+                            for k, v in sorted(leading.items()))
+                + ". Not a verdict — but a control that is level with its "
+                  "treatment leaves nothing for the treatment to have caused.",
+                data={"pairs": dof_pairs, "leading": sorted(leading)}))
+        else:
+            findings.append(Finding("㉘ dof-outperforms-target", "OK",
+                f"Every dof_control arm stays at or below its target across "
+                f"{len(dof_pairs)} pair(s) — the coherence law holds. "
+                f"(Scope: this catches a target/dof_control label swap only "
+                f"when the true target genuinely beats its control. When the "
+                f"two are indistinguishable the swap is invisible here — and "
+                f"so is the effect the swap would be hiding.)",
+                data={"pairs": dof_pairs}))
 
     # ── C1–C4 internal-consistency laws (cost-raising, NOT a fix) ────────
     findings.extend(_subspace_consistency(rows, ambient_dim=ambient, dim_tol=dim_tol))

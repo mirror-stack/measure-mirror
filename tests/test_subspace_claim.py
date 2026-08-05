@@ -369,3 +369,84 @@ def test_granularity_paired_test_uses_seed_level_n_not_one():
     for res in ladder.data["results"].values():
         assert res["n"] == len(SEEDS)
         assert res["exact"] is True
+
+
+# ─────────────── ⑧ dof-outperforms-target · the coherence law ───────────────
+# Added after substrate-2 (seal 5c78e503) turned `relabeled_dof` into a
+# confirmed false negative: the probe had NO mechanism for a role swap, and the
+# case had passed on FM×CDE only because the shuffled arm did not beat the null
+# there. The law: a dof_control is the target's procedure with the claimed
+# structure destroyed, and destroying structure cannot ADD effect.
+def _swap_roles(rep, a, b):
+    """Swap two arms' declared roles in both `arms` and `cells`."""
+    import copy
+    r = copy.deepcopy(rep)
+    r["arms"][a]["role"], r["arms"][b]["role"] = (r["arms"][b]["role"],
+                                                 r["arms"][a]["role"])
+    for c in r["cells"]:
+        if c["arm"] == a:
+            c["role"] = r["arms"][a]["role"]
+        elif c["arm"] == b:
+            c["role"] = r["arms"][b]["role"]
+    return r
+
+
+def test_coherence_ok_when_the_control_stays_below_its_target():
+    f = subspace_claim_check(clean_report())
+    assert _lvl(f, "dof-outperforms-target") == "OK"
+    assert _lvl(f, "null-ladder") == "OK"
+
+
+def test_coherence_fails_when_the_control_beats_its_target():
+    """The swap the probe used to confirm. TGT and SHUF exchange roles, so the
+    declared target (0.42) now sits below the declared control (0.80)."""
+    f = subspace_claim_check(_swap_roles(clean_report(), "TGT", "SHUF"))
+    assert _lvl(f, "dof-outperforms-target") == "FAIL"
+
+
+def test_coherence_violation_holds_the_ladder_below_ok():
+    """Same priority shape as the anchor rule: the ladder's arithmetic is fine,
+    but a consumer reading only `null-ladder` must not see a green light on a
+    report whose control beats its treatment."""
+    f = subspace_claim_check(_swap_roles(clean_report(), "TGT", "SHUF"))
+    ladder = next(x for x in f if x.probe.endswith("null-ladder"))
+    assert ladder.level == "WARN"
+    assert ladder.data["held_by"] == "dof-outperforms-target"
+
+
+def test_coherence_warns_when_the_control_only_leads_on_the_mean():
+    """A control level with its treatment leaves nothing for the treatment to
+    have caused — but it is not a verdict, so it must not be a FAIL."""
+    rep = clean_report()
+    # every seed alternates sign → mean excess > 0, sign-flip p well above α
+    rep["arms"]["SHUF"]["effect_by_seed"] = [
+        v + (0.05 if i % 2 else -0.04)
+        for i, v in enumerate(rep["arms"]["TGT"]["effect_by_seed"])]
+    assert _lvl(subspace_claim_check(rep), "dof-outperforms-target") == "WARN"
+
+
+def test_coherence_is_not_emitted_without_a_dof_control_arm():
+    """Nothing to compare is not a pass and not a failure — no finding at all.
+    `dof-uncontrolled` is the finding that speaks to the absence."""
+    rep = clean_report()
+    rep["arms"].pop("SHUF")
+    rep["cells"] = [c for c in rep["cells"] if c["arm"] != "SHUF"]
+    f = subspace_claim_check(rep)
+    assert _lvl(f, "dof-outperforms-target") is None
+    assert _lvl(f, "dof-uncontrolled") == "FAIL"
+
+
+def test_coherence_does_not_demand_the_target_be_variance_optimal():
+    """The rejected alternative, pinned as a test so it cannot creep back.
+
+    A target arm is a hypothesis about where the EFFECT lives, not where the
+    variance lives — 103_ labels its PCA arm `data_only` for exactly that
+    reason. A rule keyed on 'the target must need the fewest components' would
+    FAIL this honest report, where the control reaches each energy target with
+    the same k as the target and the null needs far more.
+    """
+    rep = clean_report()
+    tgt_k = {c["grid_point"]: c["k"] for c in rep["cells"] if c["arm"] == "TGT"}
+    shuf_k = {c["grid_point"]: c["k"] for c in rep["cells"] if c["arm"] == "SHUF"}
+    assert tgt_k == shuf_k                      # no k-ordering signal at all
+    assert _lvl(subspace_claim_check(rep), "dof-outperforms-target") == "OK"

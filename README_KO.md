@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml/badge.svg)](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![deps: zero](https://img.shields.io/badge/deps-zero-brightgreen.svg)](pyproject.toml)
+[![core deps: zero](https://img.shields.io/badge/core%20deps-zero-brightgreen.svg)](pyproject.toml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
 **AI 평가 주장의 거짓양성과 거짓음성을 자동으로 적발합니다.**  

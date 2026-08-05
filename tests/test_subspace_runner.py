@@ -369,7 +369,13 @@ def test_advertising_states_the_scope_of_the_stdlib_claim():
     # version of the same overclaim ("외부 의존성 없음", judge not even named)
     # while the EN one was being corrected — a one-sided guard is how that
     # drift survives.
+    # The badge is the most-read dependency claim on the page, and it was the
+    # last unqualified one left after the prose had been corrected.
+    badge = "badge/core%20deps-zero"
+    assert badge in readme
+
     ko = (REPO / "README_KO.md").read_text()
+    assert badge in ko
     assert 'pip install -e ".[subspace]"' in ko
     assert "stdlib 전용인 것은 코어와 A층" in ko
     assert "zero-dep-scope-overgeneralize" in ko

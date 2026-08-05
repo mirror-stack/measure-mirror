@@ -249,6 +249,8 @@ findings = mm.verify("ledger.jsonl", data, groups=["judge"])
 |---|---|---|
 | `subspace_claim_check` | ㉘ | 비트재현 앵커 미선언 · 팔 간 잔존 에너지 불일치 · 자유도 대조 부재 · target이 널 사다리를 못 넘음(짝지은 부호뒤집기 순열검정, n ≤ 14는 2ⁿ 완전열거) · 증서 미달 `matched_null` 팔(붕괴로도 생존으로도 세지 않음) · 격자 포화 · 기저를 추정한 표본으로 효과까지 평가 |
 
+🔴 **한 실험 가문에서만 검증됐고, 두 번째 가문이 그 일반화를 죽였다.** 같은 심은 레시피를 다른 실기질(타 아크의 768차원 DINO 임베딩·봉인 `5c78e503`·결과 am `2ab6eab7`)에서 재생하니 **사전확약 바 1.0에 8/10**(FP=1·FN=1). 핵심 실패: **㉘에는 역할 뒤바꾼 주장에 대한 방어가 없다.** 리포트가 자유도 대조를 target이라 라벨하면 이 함수는 못 잡는다 — `relabeled_dof` 케이스가 1기질에서 통과한 건 거기서 셔플 팔이 널을 못 이겼기 때문이지 기제가 있어서가 아니었다. 방어처럼 보였지만 기질 운이었다. 전문: [eval/subspace_substrate2/RESULTS.md](eval/subspace_substrate2/RESULTS.md).
+
 #### ㉘ B층 — 실행기 (`measure_mirror.subspace`, numpy 필요)
 
 ```bash

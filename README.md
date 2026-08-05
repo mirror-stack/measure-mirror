@@ -17,7 +17,7 @@ Zero training · Deterministic · Stdlib-only core (Python 3.10+; the `judge` an
 
 **[📖 Full Probe Guide →](docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
 **[📜 MIRROR-SPEC v1.1 →](docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
-**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 70 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
+**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 71 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
 
 > **🪞🔎🪪 New — Mirror Stack** ([`stack/`](stack/)): measure-mirror is the *claims* layer of a
 > three-mirror integrity stack for autonomous research agents (claims · actions · provenance,
@@ -268,6 +268,8 @@ extra keys fire extra probes. The `data` keys are identical to the JSON file for
 ### `subspace` — "the gain lives in a few directions" claims
 
 ⚠️ **A declaration auditor, not a recomputer.** It reads the submitted table, never the basis or the model, so a falsified `energy_kept` passes. The C1–C4 consistency laws raise the cost of a false table — they do not close the hole.
+
+🔴 **Validated on one experiment family, and a second one killed the generalization.** Replaying the same planted recipes on a different real substrate (768-d DINO embeddings from another arc; seal `5c78e503`, result `am 2ab6eab7`) scored **8/10 against a pre-committed bar of 1.0** — FP=1, FN=1. The load-bearing failure: **㉘ has no guard against a swapped-role claim.** If a report labels its degrees-of-freedom control as the target, nothing here detects it; the `relabeled_dof` case passed on the first substrate only because the shuffled arm did not beat the null *there*. That pass looked like a guard and was substrate luck. Full write-up: [eval/subspace_substrate2/RESULTS.md](eval/subspace_substrate2/RESULTS.md).
 
 | Probe | # | Catches |
 |---|---|---|

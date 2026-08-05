@@ -2542,6 +2542,19 @@ def subspace_claim_check(report: dict, *,
     Findings (all prefixed ㉘), with a priority rule: when the anchor fails,
     `null-ladder` cannot report OK — without a reproducible anchor the ratio
     normalizer is undefined, so the p-value sits on an unlabelled axis.
+
+    🔴 **No guard against a swapped-role claim.** If a report labels its
+    degrees-of-freedom control as the target and the real target as the control,
+    nothing here detects it: the table alone does not say which arm was the
+    treatment, and `null-ladder` will confirm the swap whenever the control
+    happens to beat the null. The planted set's `relabeled_dof` case passed on
+    FM×CDE only because the shuffled arm did not beat the null *there* — that
+    pass was a property of the substrate, not a mechanism in this function. On a
+    second substrate (sealed `5c78e503`, result am `2ab6eab7`: 768-d DINO
+    embeddings, where a column-shuffled basis beats a random one because
+    shuffling preserves the per-dimension marginals that carry the signal) the
+    same case is a confirmed false negative. See
+    `eval/subspace_substrate2/RESULTS.md`.
     """
     findings: list[Finding] = []
     if not isinstance(report, dict):

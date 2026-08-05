@@ -5,6 +5,52 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.30.0] — 2026-08-05
+
+### Added
+- **㉘ layer B — `measure_mirror/subspace.py`, the executor.** Layer A audits a
+  submitted table; layer B *produces* one from the arrays and hands it straight
+  back to layer A, so an own run is judged by the same auditor a stranger's
+  claim is. Requires numpy: `pip install "measure-mirror[subspace]"`.
+  - `fit_basis` / `energy_profile` / `cumulative_energy` / `k_for_energy` —
+    basis estimation with `pca` / `random` / `shuffled` (dof control) / `given`.
+    A rank-deficient sample is *padded* to a complete basis, not truncated:
+    with n < d, truncating at the sample's rank would silently cap every energy
+    target at whatever that sample happened to span. The `random` basis is
+    deliberately left unsorted, which is what preserves the `energy/k ≈ 1/d`
+    relation layer A's C4 uses to recover the ambient dimension.
+  - `build_subspace_report(...)` — arrays + an effect callback → a layer-A
+    report. Declares `effect_fn_sha256` (sha256 of the callback's source); when
+    the source cannot be read the field is `None` with a stated reason, because
+    hashing a repr would look like provenance while attesting to nothing.
+    `basis_fit_ids` / `effect_eval_ids` are **content-addressed** (sha256 of
+    each row's float64 bytes), so `estimation-eval-overlap` tests actual reuse
+    rather than declared labels.
+  - `overfit_smallsample(...)` — the judgment layer A is structurally unable to
+    make. Layer A can only lint `underdetermined-basis` from a declared
+    `n_basis_fit`; whether such a basis really aligned with noise is a property
+    of the estimation run. Synthetic isotropic Gaussians, signal 0,
+    `n_basis ∈ {20, 50, 200}`: the target arm must not clear the null ladder.
+    **A positive control runs at every `n`, not only the largest** — otherwise
+    "the target did not win at n=20" and "the instrument is blind at n=20" are
+    indistinguishable, and any `n` whose control fails is reported *withheld*,
+    never counted as a pass.
+- `tests/test_subspace_runner.py` (25) — includes a test that deliberately makes
+  the instrument inert (`positive_signal=0.0`) and requires it to report itself
+  vacuous, and a subprocess test that imports the core with numpy blocked.
+
+### Changed
+- **Dependency advertising now carries its scope.** "Zero-dep core" became
+  "stdlib-only core", stated together with the two optional modules that do
+  have dependencies (`judge` → openai/anthropic, `subspace` → numpy). Dropping
+  that qualifier is the overgeneralisation recorded in
+  `catalog/self-catch/zero-dep-scope-overgeneralize.md`, caught on this
+  README once already; a test now guards the wording.
+- CI installs `.[test,subspace]` — without it the layer-B tests would skip and
+  layer B would ship unexercised by CI.
+
+---
+
 ## [0.29.0] — 2026-08-04
 
 ### Added

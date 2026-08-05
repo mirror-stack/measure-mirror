@@ -1,7 +1,13 @@
-"""🪞 Measurement Mirror — 평가 주장 자동 감사 (훈련0·결정론적·의존성0).
+"""🪞 Measurement Mirror — 평가 주장 자동 감사 (훈련0·결정론적).
 
 AI의 "X 달성" 주장이 진짜 신호인지 측정 착시(거짓양성/거짓음성)인지 자동 적발.
 규율 원문: Chrysalis/agent_chat/MEASUREMENT_MIRROR.md (7체크).
+
+의존성 범위 — **의존성0인 것은 이 코어와 A층 감사기들뿐이다.** 선택 모듈은
+의존성을 가진다: ``judge`` (openai/anthropic), ``subspace`` (㉘ **B층 실행기**,
+numpy). 이 단서를 떼고 "의존성0"만 말하는 것이 도감 항목
+``catalog/self-catch/zero-dep-scope-overgeneralize.md``가 기록한 과대일반화다.
+선택 모듈은 여기서 import하지 않는다 — 그래야 코어 import가 stdlib로 남는다.
 """
 from .mm import (
     # ledger + utilities
@@ -40,4 +46,4 @@ __all__ = [
     "wilson_ci", "lookup_baseline", "lookup_reproduction", "record_reproduction",
     "catch_history", "report", "Finding",
 ]
-__version__ = "0.29.0"
+__version__ = "0.30.0"

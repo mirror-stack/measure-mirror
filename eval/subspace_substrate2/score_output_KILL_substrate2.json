@@ -1,0 +1,321 @@
+{
+  "verdict": "KILL",
+  "fp": 1,
+  "fn": 1,
+  "constant_findings": {
+    "estimation-eval-overlap": [
+      "FAIL"
+    ]
+  },
+  "n_positive": 4,
+  "n_negative": 6,
+  "results": [
+    {
+      "id": "s2_clean",
+      "kind": "positive",
+      "layer": "real",
+      "ok": false,
+      "mismatches": [
+        "estimation-eval-overlap: got ['FAIL'], expected one of ['OK']"
+      ],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "s2_self_null",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "s2_anchor_stripped",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "FAIL"
+        ],
+        "null-ladder": [
+          "WARN"
+        ]
+      }
+    },
+    {
+      "id": "s2_dof_missing",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "FAIL"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "s2_relabeled_dof",
+      "kind": "negative",
+      "layer": "real",
+      "ok": false,
+      "mismatches": [
+        "null-ladder: emitted ['OK'] which is forbidden (['OK'])"
+      ],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "s2_estimation_eval_leak",
+      "kind": "negative",
+      "layer": "half",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "s2_energy_confound",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "FAIL"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "s2_nogrid",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "N/A"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "s2_saturated",
+      "kind": "negative",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "FAIL"
+        ]
+      }
+    },
+    {
+      "id": "s2_bar_resolves",
+      "kind": "positive",
+      "layer": "real",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "saturation": [
+          "OK"
+        ]
+      }
+    },
+    {
+      "id": "s2_underdetermined",
+      "kind": "negative",
+      "layer": "B",
+      "ok": true,
+      "mismatches": [],
+      "levels": {
+        "consistency-C4": [
+          "OK"
+        ],
+        "dof-uncontrolled": [
+          "OK"
+        ],
+        "energy-not-matched": [
+          "OK"
+        ],
+        "estimation-eval-overlap": [
+          "FAIL"
+        ],
+        "no-anchor": [
+          "OK"
+        ],
+        "null-ladder": [
+          "OK"
+        ],
+        "underdetermined-basis": [
+          "WARN"
+        ]
+      }
+    }
+  ]
+}

@@ -5,6 +5,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.30.1] — 2026-08-06
+
+### Changed
+- **㉘'s scope clause is now backed by evidence, and the evidence is a KILL.**
+  Replaying the planted recipes on a **second real substrate** — 768-d DINO crop
+  embeddings from another arc, versus FM×CDE's 24-d adapter deltas (claim
+  `subspace_claim_check_substrate2_generalization_20260806_v4`, seal `5c78e503`,
+  result am `2ab6eab7`) — scored **CASE_ACCURACY 0.80 against a pre-committed
+  bar of 1.0** (chance 0.60): FP=1, FN=1. Per the seal's pre-commitment there was
+  no repair round.
+  - **The load-bearing finding: ㉘ has no guard against a swapped-role claim.**
+    If a report labels its degrees-of-freedom control as the target, nothing in
+    the function detects it — the table alone does not say which arm was the
+    treatment. The `relabeled_dof` case passed on FM×CDE only because the
+    shuffled arm did not beat the null *there*. That pass looked like a guard
+    and was substrate luck. On substrate-2 the shuffled arm beats the random
+    null on all 8 splits (0.4437 vs 0.4240, chance 0.3469) and `null-ladder`
+    confirms the swap. Recorded in the function's own docstring and in both
+    READMEs, because a reader of the old text would over-trust the probe.
+  - A substrate fact worth its own line: **a column-shuffled basis is not a null
+    on real anisotropic embeddings** — shuffling destroys cross-dimension
+    covariance but preserves the per-dimension marginals that carry the signal.
+  - The FP is the auditor being *right*: exactly one evaluation row is
+    byte-identical to a row the basis was fitted on (the substrate has 4
+    duplicate pair-feature rows), so index-disjoint splits were not
+    content-disjoint. That diagnosis is unsealed, is labelled as such, and was
+    **not** used to rescore.
+  - This does **not** falsify seal `99a1a510`, the FM×CDE holdout judgment,
+    which was explicitly scoped to one experiment family.
+- `eval/subspace_substrate2/` — generator, case set, the KILL score output under
+  a name that says so, and `RESULTS.md`. The substrate's provenance is checked
+  rather than assumed: the COCO annotation sha256 head matches the value the
+  original pilot sealed, and regeneration reproduces its object, pair and
+  relation counts exactly.
+- 🦋 Catalog 70 → 71: `fn-guard/guard-passed-by-substrate-luck` — a guard case
+  can pass because the substrate made the defect invisible rather than because
+  the tool has a mechanism, and one substrate can never tell the two apart.
+
+---
+
 ## [0.30.0] — 2026-08-05
 
 ### Added

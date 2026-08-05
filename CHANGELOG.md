@@ -48,6 +48,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   README once already; a test now guards the wording.
 - CI installs `.[test,subspace]` — without it the layer-B tests would skip and
   layer B would ship unexercised by CI.
+- 🦋 Catalog 67 → 70, all three from this arc with ledger seals:
+  `fn-guard/constant-check-passes-vacuously` (98e993b2) — a check whose verdict
+  is the same for every case catches every planted negative for free;
+  `self-catch/coincidence-read-as-design` (3e6bd450) — "any collision proves
+  design" cannot separate honest 8-of-160 collisions from a real 5-of-5 grid,
+  and the fix removed the threshold rather than tuning it;
+  `contamination/devset-consumed-by-repair-signal` (99a1a510) — a set you
+  repaired against is development signal, and its later perfect score carries
+  no evidential weight.
 
 ---
 

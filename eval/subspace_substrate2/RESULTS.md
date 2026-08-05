@@ -115,3 +115,52 @@ its default 0.6, equal to the declared chance, and ㉗ `prereg-lint` FAILed and
 blocked the compute gate. Nothing was ever run under any of them. They are left
 standing rather than deleted; that is what an append-only ledger is for, and the
 lint catching the same operator error three running is the honest record.
+
+
+---
+
+## 🟢 Follow-up (2026-08-06): the gap this KILL exposed is now closed
+
+The KILL above stands — it is not amended, and nothing here rescores it. What
+changed is the probe.
+
+`㉘ dof-outperforms-target` was added: **a degrees-of-freedom control is the
+target's own procedure with the claimed structure destroyed, and destroying
+structure cannot ADD effect**, so a truthful table satisfies
+`effect(dof_control) ≤ effect(target)`. A violation is FAIL by the same paired
+sign-flip the ladder uses, and it holds `null-ladder` below OK by the same
+priority shape as the anchor rule — so a consumer reading only the ladder cannot
+see a green light on a report whose control beats its treatment.
+
+Sealed judgment on the FM×CDE **holdout** (v01+v05, never used to design any
+role-swap rule): claim `582f4130` · result am `45d5f3d2` ·
+**CASE_ACCURACY 22/22 = 1.0** against a pre-committed bar of 1.0, chance 0.6364
+· FP=0 · FN=0 · zero constant findings.
+
+Re-scoring substrate-2 — the **design** set, so this carries no evidential
+weight — now gives **FN=0**: `s2_relabeled_dof` passes. The FP is unchanged and
+unrelated to this law.
+
+### The rule that was rejected, and why that was the decision
+
+The first candidate was a variance heuristic: *the target must need the fewest
+components at a given retained energy.* On substrate-2 the signal is enormous —
+the target needs **33.6** components for 50% energy against **273.0** for the
+shuffled control and **384.2** for the random one.
+
+It was discarded **before measuring anything on FM×CDE**, because it is a
+category error: a target arm is a hypothesis about where the **effect** lives,
+not where the **variance** lives. 103_ labels its PCA arm `data_only` for
+exactly that reason. A variance-optimality rule would FAIL honest reports whose
+treatment is not the leading principal subspace — it would have looked like a
+guard on substrate-2 and been a false-positive machine everywhere else, which is
+the same shape as the failure this whole page documents.
+
+### What is still not guarded
+
+The law catches the swap **only when the true target genuinely beats its
+control**. When the two are statistically indistinguishable the swap stays
+invisible — and so does the effect it would be hiding. A report with no
+`dof_control` arm has nothing to compare (`dof-uncontrolled` speaks to that
+absence instead). Layer A's standing hole is untouched: a consistent forgery,
+one that also flips the effect numbers, still passes.

@@ -208,7 +208,8 @@ def build_cases(r103, r104, r105, home: str = "v04") -> list[dict]:
         "no cell dropped, LOCAL_SHUF left in place as the dof control",
         c105,
         {"no-anchor": ["OK"], "dof-uncontrolled": ["OK"],
-         "energy-not-matched": ["OK"], "estimation-eval-overlap": ["OK"]},
+         "energy-not-matched": ["OK"], "estimation-eval-overlap": ["OK"],
+         "dof-outperforms-target": ["OK"]},
         "the main clean case", sfx))
 
     out.append(_case(
@@ -276,9 +277,15 @@ def build_cases(r103, r104, r105, home: str = "v04") -> list[dict]:
         "105_ v04 with the roles of LOCAL and LOCAL_SHUF swapped. Label move "
         "only; energies still match, a dof arm still exists, the anchor is intact",
         relabeled,
-        {"__must_not__": {"null-ladder": ["OK"]}},
-        "★ UNDECIDABLE FROM THE TABLE ALONE. The kill is not 'catch it' — it is "
-        "'do not confirm it'. Emitting OK here is the real false negative", sfx))
+        {"__must_not__": {"null-ladder": ["OK"]},
+         "dof-outperforms-target": ["FAIL"]},
+        "★ the requirement is still 'do not confirm it', but it is no longer "
+        "left to luck. `dof-outperforms-target` is the mechanism: destroying "
+        "the claimed structure cannot ADD effect, so a control that beats its "
+        "target means the labels are swapped or the control is not one. Before "
+        "that law existed this case passed on FM×CDE only because the shuffled "
+        "arm did not beat the null THERE, and on a second substrate it became a "
+        "confirmed false negative (seal 5c78e503)", sfx))
 
     leak = copy.deepcopy(c105)
     leak["effect_eval_ids"] = leak["basis_fit_ids"]

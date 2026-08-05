@@ -5,6 +5,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.31.0] — 2026-08-06
+
+### Added
+- **㉘ `dof-outperforms-target` — the guard substrate-2 proved was missing.**
+  v0.30.1 recorded that ㉘ had *no* mechanism against a swapped-role claim and
+  that the `relabeled_dof` case had passed on FM×CDE by substrate luck. This
+  closes that, with a **coherence law rather than a heuristic**: a
+  degrees-of-freedom control is the target's own procedure with the claimed
+  structure destroyed, and destroying structure cannot *add* effect, so a
+  truthful table satisfies `effect(dof_control) ≤ effect(target)`. A violation
+  means the role labels are swapped or the arm called a control is not one.
+  - FAIL is decided by the same paired sign-flip the null ladder uses (exact 2ⁿ
+    for n ≤ 14); a control merely leading on the mean is WARN, not a verdict.
+  - A violation **holds `null-ladder` below OK**, the same priority shape the
+    anchor rule uses — otherwise a consumer reading only the ladder would see a
+    green light on a report whose control beats its treatment.
+  - No `dof_control` arm ⇒ no finding at all. Absence is `dof-uncontrolled`'s
+    business, not this one's.
+  - Sealed on the FM×CDE **holdout** (v01+v05, never used to design any
+    role-swap rule): claim `582f4130`, result am `45d5f3d2`,
+    **CASE_ACCURACY 22/22 = 1.0** against a pre-committed bar of 1.0
+    (chance 0.6364), FP=0, FN=0, zero constant findings. Re-scoring substrate-2
+    — the design set, no evidential weight — gives FN=0 there too.
+  - **Scope, stated rather than implied:** it catches the swap only when the
+    true target genuinely beats its control. When the two are indistinguishable
+    the swap stays invisible — and so does the effect it would hide.
+- `tests/test_subspace_claim.py` +6, including one that pins the **rejected**
+  alternative so it cannot creep back: a rule keyed on "the target must need the
+  fewest components at a given energy" is a category error (a target is a
+  hypothesis about where the *effect* lives, not the *variance*), and it would
+  FAIL honest reports whose treatment is not the leading principal subspace.
+
+---
+
 ## [0.30.1] — 2026-08-06
 
 ### Changed

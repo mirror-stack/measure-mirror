@@ -34,7 +34,11 @@ What this module provides
 ``energy_profile``       achieved energy fraction per component, in basis order
 ``k_for_energy``         minimal k whose cumulative energy meets a target
 ``build_subspace_report``  arrays + an effect callback → a layer-A report,
-                           with ``effect_fn_sha256`` declared
+                           with ``effect_fn_sha256`` declared; with
+                           ``certificate_tol=`` it also *computes* the
+                           matched-null certificate the ``vacuous`` finding
+                           consumes (certifying our own run — it cannot make
+                           a stranger's certificate trustworthy)
 ``overfit_smallsample``  the layer-B judgment layer A is structurally unable to
                          make: run a synthetic zero-signal null and check that
                          the pipeline reports target ≈ null
@@ -274,6 +278,7 @@ def build_subspace_report(data_by_seed: dict, *,
                           ambient_dim: int | None = None,
                           aux_by_seed: dict | None = None,
                           arm_effect: str = "mean",
+                          certificate_tol: float | None = None,
                           effect_fn_source: str | None = None,
                           source: str = "",
                           extra: dict | None = None) -> dict:
@@ -300,6 +305,19 @@ def build_subspace_report(data_by_seed: dict, *,
       arm_effect:   how per-seed arm effects are reduced across the grid
                     (``mean`` or ``max``). The paired sign-flip test in layer A
                     consumes these, so the reduction is declared in the report.
+      certificate_tol: when set, every ``matched_null`` arm gets a **computed**
+                    matching certificate embedded at ``report["certificate"]``
+                    — the schema layer A's ``vacuous`` finding consumes. The
+                    criterion is fixed, not caller-supplied: the energy the arm
+                    retained **on the eval split** (the data the effect is
+                    scored on) must meet the declared target within ``tol``,
+                    for every cell. Measuring on the eval split is the point —
+                    with ``energy_on=basis_split`` an arm can hit its target
+                    in-sample while genuinely undershooting it on the data
+                    that scored the effect, and *that* arm's low effect is
+                    evidence of nothing (the vacuous illusion). ``None``
+                    (default) emits no certificate, which layer A reports as
+                    WARN — absence stays visible rather than passing silently.
 
     Returns the layer-A report dict, plus layer-B provenance keys
     (``layer``, ``effect_fn_sha256``, ``energy_measured_on``, ``basis_kinds``,
@@ -329,6 +347,7 @@ def build_subspace_report(data_by_seed: dict, *,
     per_arm_effects: dict[str, dict[int, list[float]]] = {a: {} for a in arms}
     fit_ids: set[str] = set()
     eval_ids: set[str] = set()
+    cert_margins: dict[str, list[float]] = {}
 
     for seed in seeds:
         splits = data_by_seed[seed]
@@ -350,6 +369,8 @@ def build_subspace_report(data_by_seed: dict, *,
             basis = fit_basis(arrays[basis_split], kind=kind, rng_seed=sub_seed,
                               center=center, given=spec.get("given"))
             cum = cumulative_energy(basis, arrays[energy_on])
+            cum_eval = (cum if energy_on == eval_split
+                        else cumulative_energy(basis, arrays[eval_split]))
             for tgt in targets:
                 k = k_for_energy(cum, tgt)
                 comps = basis.top(k)
@@ -367,12 +388,17 @@ def build_subspace_report(data_by_seed: dict, *,
                     "energy_kept": float(cum[k - 1]),
                     "energy_target": tgt, "effect": eff,
                     "n": int(arrays[eval_split].shape[0]),
-                    # diagnostic, ignored by layer A: the same k measured on the
-                    # OTHER split. The gap is small-sample overfitting, visible.
+                    # diagnostics, ignored by layer A: the same k measured on
+                    # the other splits. The gap between them is small-sample
+                    # basis overfitting, kept visible.
                     "energy_kept_on_basis_split":
                         float(cumulative_energy(basis, arrays[basis_split])[k - 1]),
+                    "energy_kept_on_eval_split": float(cum_eval[k - 1]),
                 })
                 per_arm_effects[arm].setdefault(int(seed), []).append(eff)
+                if role == "matched_null" and certificate_tol is not None:
+                    cert_margins.setdefault(arm, []).append(
+                        float(cum_eval[k - 1]) - tgt)
 
     reduce = (lambda v: sum(v) / len(v)) if arm_effect == "mean" else max
     arms_out = {
@@ -405,6 +431,25 @@ def build_subspace_report(data_by_seed: dict, *,
     }
     if bar is not None:
         report["bar"] = float(bar)
+    if certificate_tol is not None:
+        cert = {}
+        for arm, spec in arms.items():
+            if spec.get("role") != "matched_null":
+                continue
+            margins = cert_margins.get(arm, [])
+            cert[arm] = {
+                # Computed from this run's own eval-split energies — NOT a
+                # caller-declared verdict. An arm with no cells cannot certify.
+                "passed": bool(margins) and min(margins) >= -float(certificate_tol),
+                "min_margin": min(margins) if margins else None,
+                "n_cells": len(margins),
+                "tol": float(certificate_tol),
+                "criterion": "energy retained on the eval split meets the "
+                             "declared target within tol, for every cell",
+                "measured_on": eval_split,
+            }
+        if cert:
+            report["certificate"] = cert
     if extra:
         report.update(extra)
     return report

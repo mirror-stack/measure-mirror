@@ -5,6 +5,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.32.0] — 2026-08-10
+
+### Added
+- **㉘ `vacuous` — both directions exercised on real runs for the first time.**
+  Until now the finding had only ever fired on synthetic tables: the FM×CDE
+  corpus carries zero real VACUOUS labels, and the planted FN case hand-writes
+  a certificate failure into a real report (recorded openly in
+  `eval/subspace_planted/RESULTS.md`). Now layer B **computes** the
+  certificate: `build_subspace_report(certificate_tol=…)` certifies every
+  `matched_null` arm against the energy it retained **on the eval split** —
+  the data the effect is scored on — so an arm that hits its target in-sample
+  while genuinely undershooting it where the effect was measured fails its
+  certificate organically, with no field edited. Cells now also carry
+  `energy_kept_on_eval_split`, so the certificate is recomputable from the
+  table it ships with. Without `certificate_tol` the report carries no
+  certificate and layer A keeps saying WARN — absence stays visible.
+  - Sealed: claim `subspace_vacuous_real_runs_balanced_20260810_v2`
+    (`2a22a95a`, result am `79cd0816`), **BALANCED_CASE 1.0** against a
+    pre-committed bar of 1.0 (chance 0.5) — unmatched 48/48 · matched 143/143,
+    9 boundary runs withheld, ground-truth labelling with an equivalent-mutant
+    filter (a "sloppy" run the manipulation failed to bite is scored as the
+    matched arm it actually is).
+  - The first sealed attempt (`17c36ad6`) went **INVALID** on its own anchor
+    clause — a literal "all unmatched" tripped on one boundary-band margin
+    whose behaviour was correct. Consumed as INVALID, re-sealed on a fresh
+    seed block; kept in `eval/subspace_vacuous_real/RESULTS.md` and added to
+    `catalog/self-catch/prereg-clause-defect-family.md` as a live case.
+  - Scope stated where it is claimed: synthetic isotropic Gaussians, own-run
+    certificates only — a consistent forgery still passes layer A, and the
+    planted synthetic cases stay in the set guarding the adapter path.
+
+---
+
 ## [0.31.0] — 2026-08-06
 
 ### Added

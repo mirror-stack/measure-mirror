@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.33.0] — 2026-08-10
+
+### Added
+- **㉘ mutant↔clause correspondence map — the aggregate detection score,
+  decomposed** (`eval/subspace_mutant_map/`). Seal `5c78e503` proved an
+  aggregate score cannot tell mechanism from substrate luck because it does
+  not decompose into "planted defect ↔ the clause that caught it" rows; the
+  mutation-testing frame (arXiv 2607.08028) treats that correspondence as the
+  basic unit of verifier coverage. `build_map.py` runs the unmodified auditor
+  on every planted layer-A negative AND its recovered honest parent (the
+  clean report for deepcopy-mutants; the lying `grid.kind` declaration undone
+  for the confound cases), diffs the finding profiles, and types each row:
+  ATTRIBUTED / DOMINATED / CONSTANT_SUSPECT / EQUIVALENT_SUSPECT / UNSAT.
+  Equivalent-mutant screening is thereby a procedure, not a judgment call —
+  a planted fault whose whole profile equals its parent's is a planting
+  failure, not an auditor pass. Sealed on the held-out homes
+  (`subspace_mutant_clause_map_holdout_20260810`, seal `e7969656`, result
+  `ddf46281`): TYPE_MATCH 12/12 = 1.0 against frozen per-recipe expectations,
+  controls 4/4. The sealed finding: `energy_confound` is **DOMINATED**, not
+  attributed — an honestly declared k grid already FAILs
+  `energy-not-matched` by design, so the lie cannot improve the verdict and
+  its "catch" validates nothing about the lie; and the vacuous real runs
+  re-read as organic mutants show 43 of 100 planted sloppy runs were
+  equivalent mutants (all 25 at n_fit=200), exposed by ground-truth
+  relabelling rather than trusted intent.
+
+---
+
 ## [0.32.0] — 2026-08-10
 
 ### Added

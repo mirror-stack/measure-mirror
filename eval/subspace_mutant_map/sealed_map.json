@@ -1,0 +1,3149 @@
+{
+  "sha256": {
+    "protocol": {
+      "measure_mirror/mm.py": "4211bfe382db553aa969113db141239726bc8fdde2a555759bd0d182f32d7995",
+      "eval/subspace_mutant_map/build_map.py": "e982f4f74587202749f598775980e682a90b8759264978e10ccfa4fa44372115"
+    },
+    "data": {
+      "eval/subspace_planted/cases.jsonl": "61bf509a0f68165af12f49fd37348f39e51671fa42b3974944920fe1722e0f95",
+      "eval/subspace_planted/cases_holdout.jsonl": "4e624ea3e0fb8cd43803586577614cfbd25625d9dea5cacd1c5d661597099591",
+      "eval/subspace_substrate2/cases_substrate2.jsonl": "422f5160ca4589b44b362c2828b507dca1006c3eace4b5fac3d328ecf0545366",
+      "eval/subspace_vacuous_real/sealed_result.json": "3ff807f6aa33435c066ba4ef7fcdccae4b1133093909af5c966731a22440a02f"
+    },
+    "combined": "26ee60d6da92139025b074ae841e8b02dc685697e65bcdaf4deab5e66b8ec0e2"
+  },
+  "scope": [
+    "dev",
+    "holdout",
+    "s2",
+    "vacuous"
+  ],
+  "bars": {
+    "primary_type_match_min": 1.0,
+    "n_primary_rows": 12,
+    "chance": 0.0
+  },
+  "env": {
+    "python": "3.10.12",
+    "platform": "Linux-5.15.185-tegra-aarch64-with-glibc2.35"
+  },
+  "controls": {
+    "killed_control": {
+      "case": "anchor_stripped(dev)",
+      "row_type": "ATTRIBUTED",
+      "ok": true
+    },
+    "equivalent_control": {
+      "case": "clean_105+source-edit",
+      "equivalent_suspect": true,
+      "ok": true
+    },
+    "neutral_control": {
+      "case": "clean_105 vs itself",
+      "equivalent_suspect": true,
+      "surface_empty": true,
+      "ok": true
+    },
+    "s2_dominated_control": {
+      "case": "s2_estimation_eval_leak",
+      "clause": "estimation-eval-overlap",
+      "row_type": "DOMINATED",
+      "ok": true
+    },
+    "all_ok": true
+  },
+  "dev": {
+    "rows": [
+      {
+        "id": "anchor_stripped",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the anchor block deleted",
+        "mutation_surface": {
+          "changed": [],
+          "removed": [
+            "anchor"
+          ],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "no-anchor",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "WARN",
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "WARN"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "FAIL"
+          ],
+          "null-ladder": [
+            "WARN"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      },
+      {
+        "id": "dof_missing",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the LOCAL_SHUF arm removed",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 40,
+            "mutant_only": 0,
+            "shared": 120
+          }
+        },
+        "clauses": [
+          {
+            "clause": "dof-uncontrolled",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "FAIL"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      },
+      {
+        "id": "relabeled_dof",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the roles of LOCAL and LOCAL_SHUF swapped",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 80,
+            "mutant_only": 80,
+            "shared": 80
+          }
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "must_not",
+            "required": {
+              "forbidden": [
+                "OK"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "dof-outperforms-target",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "FAIL"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      },
+      {
+        "id": "estimation_eval_leak",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 seed sets are real (train 0..7 / heldout 8..19, disjoint), but the holdout field is overwritten to force the overlap",
+        "mutation_surface": {
+          "changed": [
+            "effect_eval_ids"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "estimation-eval-overlap",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      },
+      {
+        "id": "energy_confound",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "undo:grid_kind_k",
+        "mutation": "103_ secondary k-grid resubmitted with grid.kind='energy'",
+        "mutation_surface": {
+          "changed": [
+            "grid"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "energy-not-matched",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "FAIL"
+            ],
+            "level_changed": false,
+            "detail_changed": true,
+            "type": "DOMINATED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "DOMINATED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        }
+      },
+      {
+        "id": "vacuous_as_collapse",
+        "layer": "synthetic",
+        "kind": "negative",
+        "parent_rule": "clean:clean_104",
+        "mutation": "🚨 FABRICATED",
+        "mutation_surface": {
+          "changed": [
+            "certificate"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "vacuous",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "vacuous": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "vacuous": [
+            "FAIL"
+          ]
+        }
+      }
+    ],
+    "fabricated": [
+      {
+        "id": "signal_free",
+        "layer": "synthetic",
+        "satisfied": true,
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "corpus_levels_seen": [
+              "FAIL",
+              "OK",
+              "WARN"
+            ],
+            "non_constant": true
+          }
+        ]
+      }
+    ],
+    "mutated_positives": [
+      {
+        "id": "self_null",
+        "layer": "real",
+        "kind": "positive",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ RANDOM arm copied into both target and null",
+        "mutation_surface": {
+          "changed": [
+            "arms"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      }
+    ]
+  },
+  "s2": {
+    "rows": [
+      {
+        "id": "s2_anchor_stripped",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "Substrate-2 clean report with the anchor block deleted",
+        "mutation_surface": {
+          "changed": [],
+          "removed": [
+            "anchor"
+          ],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "no-anchor",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "WARN",
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "WARN"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "FAIL"
+          ],
+          "null-ladder": [
+            "WARN"
+          ]
+        }
+      },
+      {
+        "id": "s2_dof_missing",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "Substrate-2 clean report with the SHUFFLE (dof_control) arm removed",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 24,
+            "mutant_only": 0,
+            "shared": 48
+          }
+        },
+        "clauses": [
+          {
+            "clause": "dof-uncontrolled",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "FAIL"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        }
+      },
+      {
+        "id": "s2_relabeled_dof",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "Roles of EMB and SHUFFLE swapped",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 48,
+            "mutant_only": 48,
+            "shared": 24
+          }
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "must_not",
+            "required": {
+              "forbidden": [
+                "OK"
+              ]
+            },
+            "emitted": [
+              "WARN"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": [
+              "FAIL"
+            ]
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "FAIL"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "WARN"
+          ]
+        }
+      },
+      {
+        "id": "s2_estimation_eval_leak",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "The split ids are real and genuinely disjoint; the holdout field is overwritten to force the collision",
+        "mutation_surface": {
+          "changed": [
+            "effect_eval_ids"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "estimation-eval-overlap",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "FAIL"
+            ],
+            "level_changed": false,
+            "detail_changed": true,
+            "type": "DOMINATED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "DOMINATED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        }
+      },
+      {
+        "id": "s2_energy_confound",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "undo:grid_kind_k",
+        "mutation": "A SECOND REAL EXECUTOR RUN gridded on k (every arm held at k ∈ {8,32,128}), resubmitted with grid.kind='energy'",
+        "mutation_surface": {
+          "changed": [
+            "grid"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "energy-not-matched",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "FAIL"
+            ],
+            "level_changed": false,
+            "detail_changed": true,
+            "type": "DOMINATED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "DOMINATED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ]
+        }
+      },
+      {
+        "id": "s2_saturated",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "Substrate-2 clean report with a survival bar declared at 0.353916",
+        "mutation_surface": {
+          "changed": [],
+          "removed": [],
+          "added": [
+            "bar"
+          ]
+        },
+        "clauses": [
+          {
+            "clause": "saturation",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      }
+    ],
+    "fabricated": [],
+    "mutated_positives": [
+      {
+        "id": "s2_self_null",
+        "layer": "real",
+        "kind": "positive",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "The RANDOM arm's real measured per-split effects copied into both the target and the null slot",
+        "mutation_surface": {
+          "changed": [
+            "arms"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ]
+        }
+      },
+      {
+        "id": "s2_nogrid",
+        "layer": "real",
+        "kind": "positive",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "Substrate-2 clean report with the grid and the cells deleted, arms and their per-split effects kept",
+        "mutation_surface": {
+          "changed": [
+            "cells"
+          ],
+          "removed": [
+            "grid"
+          ],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 72,
+            "mutant_only": 0,
+            "shared": 0
+          }
+        },
+        "clauses": [
+          {
+            "clause": "energy-not-matched",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "N/A"
+              ]
+            },
+            "emitted": [
+              "N/A"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "dof-uncontrolled",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "OK"
+              ]
+            },
+            "emitted": [
+              "OK"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": false,
+            "detail_changed": false,
+            "type": "CONSTANT_SUSPECT"
+          }
+        ],
+        "side_effect_clauses": {
+          "consistency-C4": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "CONSTANT_SUSPECT",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        }
+      },
+      {
+        "id": "s2_bar_resolves",
+        "layer": "real",
+        "kind": "positive",
+        "parent_rule": "clean:s2_clean",
+        "mutation": "The same report with the survival bar declared a hair above the null arm's BEST measured effect at the top grid point (0.414157)",
+        "mutation_surface": {
+          "changed": [],
+          "removed": [],
+          "added": [
+            "bar"
+          ]
+        },
+        "clauses": [
+          {
+            "clause": "saturation",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "OK"
+              ]
+            },
+            "emitted": [
+              "OK"
+            ],
+            "ok": true,
+            "parent_emitted": [],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        }
+      }
+    ]
+  },
+  "holdout": {
+    "rows": [
+      {
+        "id": "anchor_stripped@v01",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the anchor block deleted",
+        "mutation_surface": {
+          "changed": [],
+          "removed": [
+            "anchor"
+          ],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "no-anchor",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "WARN",
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "WARN"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "FAIL"
+          ],
+          "null-ladder": [
+            "WARN"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "dof_missing@v01",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the LOCAL_SHUF arm removed",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 40,
+            "mutant_only": 0,
+            "shared": 120
+          }
+        },
+        "clauses": [
+          {
+            "clause": "dof-uncontrolled",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "FAIL"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "relabeled_dof@v01",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the roles of LOCAL and LOCAL_SHUF swapped",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 80,
+            "mutant_only": 80,
+            "shared": 80
+          }
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "must_not",
+            "required": {
+              "forbidden": [
+                "OK"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "dof-outperforms-target",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "FAIL"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "estimation_eval_leak@v01",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 seed sets are real (train 0..7 / heldout 8..19, disjoint), but the holdout field is overwritten to force the overlap",
+        "mutation_surface": {
+          "changed": [
+            "effect_eval_ids"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "estimation-eval-overlap",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "energy_confound@v01",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "undo:grid_kind_k",
+        "mutation": "103_ secondary k-grid resubmitted with grid.kind='energy'",
+        "mutation_surface": {
+          "changed": [
+            "grid"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "energy-not-matched",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "FAIL"
+            ],
+            "level_changed": false,
+            "detail_changed": true,
+            "type": "DOMINATED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "DOMINATED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "expected_type": "DOMINATED",
+        "type_match": true
+      },
+      {
+        "id": "vacuous_as_collapse@v01",
+        "layer": "synthetic",
+        "kind": "negative",
+        "parent_rule": "clean:clean_104",
+        "mutation": "🚨 FABRICATED",
+        "mutation_surface": {
+          "changed": [
+            "certificate"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "vacuous",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "vacuous": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "vacuous": [
+            "FAIL"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "anchor_stripped@v05",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the anchor block deleted",
+        "mutation_surface": {
+          "changed": [],
+          "removed": [
+            "anchor"
+          ],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "no-anchor",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "WARN",
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "WARN"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "FAIL"
+          ],
+          "null-ladder": [
+            "WARN"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "dof_missing@v05",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the LOCAL_SHUF arm removed",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 40,
+            "mutant_only": 0,
+            "shared": 120
+          }
+        },
+        "clauses": [
+          {
+            "clause": "dof-uncontrolled",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "FAIL"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "relabeled_dof@v05",
+        "layer": "real",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 with the roles of LOCAL and LOCAL_SHUF swapped",
+        "mutation_surface": {
+          "changed": [
+            "arms",
+            "cells"
+          ],
+          "removed": [],
+          "added": [],
+          "cells_summary": {
+            "parent_only": 80,
+            "mutant_only": 80,
+            "shared": 80
+          }
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "must_not",
+            "required": {
+              "forbidden": [
+                "OK"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          },
+          {
+            "clause": "dof-outperforms-target",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "FAIL"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "estimation_eval_leak@v05",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ v04 seed sets are real (train 0..7 / heldout 8..19, disjoint), but the holdout field is overwritten to force the overlap",
+        "mutation_surface": {
+          "changed": [
+            "effect_eval_ids"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "estimation-eval-overlap",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "FAIL"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      },
+      {
+        "id": "energy_confound@v05",
+        "layer": "half",
+        "kind": "negative",
+        "parent_rule": "undo:grid_kind_k",
+        "mutation": "103_ secondary k-grid resubmitted with grid.kind='energy'",
+        "mutation_surface": {
+          "changed": [
+            "grid"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "energy-not-matched",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "FAIL"
+            ],
+            "level_changed": false,
+            "detail_changed": true,
+            "type": "DOMINATED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "DOMINATED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "FAIL"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "expected_type": "DOMINATED",
+        "type_match": true
+      },
+      {
+        "id": "vacuous_as_collapse@v05",
+        "layer": "synthetic",
+        "kind": "negative",
+        "parent_rule": "clean:clean_104",
+        "mutation": "🚨 FABRICATED",
+        "mutation_surface": {
+          "changed": [
+            "certificate"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "vacuous",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {},
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "vacuous": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "dof-uncontrolled": [
+            "WARN"
+          ],
+          "energy-not-matched": [
+            "N/A"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "vacuous": [
+            "FAIL"
+          ]
+        },
+        "expected_type": "ATTRIBUTED",
+        "type_match": true
+      }
+    ],
+    "fabricated": [
+      {
+        "id": "signal_free@v01",
+        "layer": "synthetic",
+        "satisfied": true,
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "corpus_levels_seen": [
+              "FAIL",
+              "OK",
+              "WARN"
+            ],
+            "non_constant": true
+          }
+        ]
+      },
+      {
+        "id": "signal_free@v05",
+        "layer": "synthetic",
+        "satisfied": true,
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "corpus_levels_seen": [
+              "FAIL",
+              "OK",
+              "WARN"
+            ],
+            "non_constant": true
+          }
+        ]
+      }
+    ],
+    "mutated_positives": [
+      {
+        "id": "self_null@v01",
+        "layer": "real",
+        "kind": "positive",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ RANDOM arm copied into both target and null",
+        "mutation_surface": {
+          "changed": [
+            "arms"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ],
+          "saturation": [
+            "OK"
+          ]
+        }
+      },
+      {
+        "id": "self_null@v05",
+        "layer": "real",
+        "kind": "positive",
+        "parent_rule": "clean:clean_105",
+        "mutation": "105_ RANDOM arm copied into both target and null",
+        "mutation_surface": {
+          "changed": [
+            "arms"
+          ],
+          "removed": [],
+          "added": []
+        },
+        "clauses": [
+          {
+            "clause": "null-ladder",
+            "mode": "expect",
+            "required": {
+              "one_of": [
+                "FAIL",
+                "WARN"
+              ]
+            },
+            "emitted": [
+              "FAIL"
+            ],
+            "ok": true,
+            "parent_emitted": [
+              "OK"
+            ],
+            "level_changed": true,
+            "detail_changed": true,
+            "type": "ATTRIBUTED"
+          }
+        ],
+        "side_effect_clauses": {
+          "dof-outperforms-target": {
+            "parent": [
+              "OK"
+            ],
+            "mutant": []
+          }
+        },
+        "killed": true,
+        "equivalent_suspect": false,
+        "row_type": "ATTRIBUTED",
+        "parent_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-outperforms-target": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "OK"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        },
+        "mutant_profile": {
+          "consistency-C4": [
+            "OK"
+          ],
+          "dof-uncontrolled": [
+            "OK"
+          ],
+          "energy-not-matched": [
+            "OK"
+          ],
+          "estimation-eval-overlap": [
+            "OK"
+          ],
+          "no-anchor": [
+            "OK"
+          ],
+          "null-ladder": [
+            "FAIL"
+          ],
+          "saturation": [
+            "FAIL"
+          ]
+        }
+      }
+    ]
+  },
+  "primary": {
+    "TYPE_MATCH": 1.0,
+    "n_match": 12,
+    "n_rows": 12,
+    "expected_types": {
+      "anchor_stripped": "ATTRIBUTED",
+      "dof_missing": "ATTRIBUTED",
+      "relabeled_dof": "ATTRIBUTED",
+      "estimation_eval_leak": "ATTRIBUTED",
+      "energy_confound": "DOMINATED",
+      "vacuous_as_collapse": "ATTRIBUTED"
+    },
+    "mismatches": []
+  },
+  "verdict": "PASS",
+  "vacuous_organic": {
+    "seal": "2a22a95a",
+    "per_condition": {
+      "honest@8": {
+        "runs": 25,
+        "killed": 0,
+        "equivalent": 25,
+        "withheld_boundary": 0,
+        "caught_by": null
+      },
+      "honest@20": {
+        "runs": 25,
+        "killed": 0,
+        "equivalent": 25,
+        "withheld_boundary": 0,
+        "caught_by": null
+      },
+      "honest@50": {
+        "runs": 25,
+        "killed": 0,
+        "equivalent": 25,
+        "withheld_boundary": 0,
+        "caught_by": null
+      },
+      "honest@200": {
+        "runs": 25,
+        "killed": 0,
+        "equivalent": 25,
+        "withheld_boundary": 0,
+        "caught_by": null
+      },
+      "sloppy@8": {
+        "runs": 25,
+        "killed": 25,
+        "equivalent": 0,
+        "withheld_boundary": 0,
+        "caught_by": "vacuous"
+      },
+      "sloppy@20": {
+        "runs": 25,
+        "killed": 20,
+        "equivalent": 1,
+        "withheld_boundary": 4,
+        "caught_by": "vacuous"
+      },
+      "sloppy@50": {
+        "runs": 25,
+        "killed": 3,
+        "equivalent": 17,
+        "withheld_boundary": 5,
+        "caught_by": "vacuous"
+      },
+      "sloppy@200": {
+        "runs": 25,
+        "killed": 0,
+        "equivalent": 25,
+        "withheld_boundary": 0,
+        "caught_by": "vacuous"
+      }
+    },
+    "sloppy_total": {
+      "runs": 100,
+      "killed": 48,
+      "equivalent": 43,
+      "withheld_boundary": 9
+    }
+  }
+}

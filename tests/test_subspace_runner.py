@@ -268,6 +268,62 @@ def test_b2_rejects_malformed_calls():
 
 
 # ─────────────────────────────────────────────────────────────
+# B2b — the computed matched-null certificate (what `vacuous` consumes)
+# ─────────────────────────────────────────────────────────────
+MATCHED_ARMS = {"TARGET": {"role": "target", "basis": "pca"},
+                "MATCHED": {"role": "matched_null", "basis": "shuffled"}}
+
+
+def test_b2b_default_emits_no_certificate_and_layer_a_says_warn():
+    """No certificate_tol → no certificate key. Layer A must then WARN on the
+    matched_null arm — absence stays visible instead of passing silently."""
+    rep = _build(arms=MATCHED_ARMS)
+    assert "certificate" not in rep
+    assert _lvl(subspace_claim_check(rep), "vacuous") == "WARN"
+
+
+def test_b2b_honest_run_certifies_organically_and_layer_a_says_ok():
+    """With k selected on the split the energy is reported on (the default),
+    the matched arm meets its target by the minimal-k rule — the certificate
+    passes from the run's own numbers, nothing is declared by hand."""
+    rep = _build(arms=MATCHED_ARMS, certificate_tol=0.05)
+    cert = rep["certificate"]
+    assert set(cert) == {"MATCHED"}          # target arms carry no certificate
+    assert cert["MATCHED"]["passed"] is True
+    assert cert["MATCHED"]["min_margin"] >= -1e-12
+    assert cert["MATCHED"]["n_cells"] == 4 * 3
+    assert _lvl(subspace_claim_check(rep), "vacuous") == "OK"
+
+
+def test_b2b_insample_matching_fails_its_certificate_organically():
+    """k selected in-sample at small n: the shuffled basis overfits its fit
+    sample, so on the eval split the arm genuinely undershoots the target.
+    The certificate failure is computed, not planted by editing a field —
+    this is the FAIL direction of `vacuous` produced by a real run."""
+    rep = _build(arms=MATCHED_ARMS, certificate_tol=0.05,
+                 data=_dataset(n_basis=20), energy_on="basis")
+    cert = rep["certificate"]["MATCHED"]
+    assert cert["passed"] is False
+    assert cert["min_margin"] < -0.05        # the mutation demonstrably bit
+    assert _lvl(subspace_claim_check(rep), "vacuous") == "FAIL"
+
+
+def test_b2b_certificate_margin_matches_the_emitted_eval_energy_cells():
+    """The certificate must be recomputable from the table it ships with:
+    min_margin == min over the arm's cells of (eval-split energy − target)."""
+    rep = _build(arms=MATCHED_ARMS, certificate_tol=0.05,
+                 data=_dataset(n_basis=20), energy_on="basis")
+    cells = [c for c in rep["cells"] if c["arm"] == "MATCHED"]
+    recomputed = min(c["energy_kept_on_eval_split"] - c["energy_target"]
+                     for c in cells)
+    assert rep["certificate"]["MATCHED"]["min_margin"] == pytest.approx(recomputed)
+    # and when energy is read where k was chosen, the two energies coincide
+    honest = _build(arms=MATCHED_ARMS, certificate_tol=0.05)
+    for c in honest["cells"]:
+        assert c["energy_kept_on_eval_split"] == pytest.approx(c["energy_kept"])
+
+
+# ─────────────────────────────────────────────────────────────
 # B3 — overfit_smallsample, and its own discrimination gate
 # ─────────────────────────────────────────────────────────────
 # Only the swept axis (n_basis) is trimmed. n_probe / n_eval keep their

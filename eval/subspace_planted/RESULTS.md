@@ -34,6 +34,14 @@ result_102_anchor_spectrum.json    any_vacuous_null: false
 ⇒ **`vacuous`가 이 세트를 통과해도 그것은 실제 데이터에서의 검증이 아니다.** 공개 게이트 문서에
 이 문장을 그대로 유지한다. 숨기면 우리가 우리 도감의 `crippled_baseline` 옆에 표본을 하나 더 얹게 된다.
 
+**후속(2026-08-10)**: 손으로 써 넣던 FAIL 방향이 **계산된 증서를 가진 실런**으로 대체됐다 —
+`build_subspace_report(certificate_tol=…)`이 matched_null 팔의 증서를 eval 분할 에너지에서
+직접 계산하고, 봉인런(claim `subspace_vacuous_real_runs_balanced_20260810_v2` · seal `2a22a95a`)이
+양방향을 유기적으로 발화시켜 **PASS**했다. 판정·범위·1차 INVALID 기록 전부
+[`eval/subspace_vacuous_real/RESULTS.md`](../subspace_vacuous_real/RESULTS.md)에 있다.
+단 **이 세트의 두 케이스는 그대로 합성으로 남는다**(어댑터 경로의 가드는 여전히 이 세트 몫이고,
+합성 데이터 실런은 실기질 검증이 아니다 — 과대 진술 금지).
+
 ⚠️ 증서의 하위 검사에는 **적용 불가(`null`)** 가 섞여 있다(예: `S5_amp_matched_random`의 `sv_bar`,
 `S3a_spec_persample`의 `amp_bar`/`amp_ok`). **`null`을 "통과"로 읽으면 안 된다** — 어댑터는 `null`을
 `True`로 강제하지 않고 그대로 옮긴다.

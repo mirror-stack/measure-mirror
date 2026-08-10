@@ -116,3 +116,42 @@ def test_catalog_per_category_table_matches_the_tree():
         assert name in per, f"table lists unknown category {name!r}"
         assert int(claimed) == per[name], (
             f"catalog/README.md says {name}={claimed}, tree has {per[name]}")
+
+
+# --- Korean docs: same guards as the English side. The KO count phrases use
+# "N표본"/"vX.Y: N항목" (not "real sealed cases"), so the English guards above
+# never covered them and they silently lagged to 67 while the tree was 72.
+def test_readme_ko_catalog_count_matches_the_tree():
+    """README_KO's catalog blurb ('봉인 사례 N표본') must equal the tree total."""
+    import re
+    total = sum(_catalog_counts().values())
+    txt = (REPO / "README_KO.md").read_text(encoding="utf-8")
+    claims = [int(x) for x in re.findall(r'사례\s*(\d+)\s*표본', txt)]
+    assert claims, "README_KO.md: catalog count phrase '사례 N표본' not found — did the wording change?"
+    for claimed in set(claims):
+        assert claimed == total, (
+            f"README_KO.md claims {claimed}표본, tree has {total}")
+
+
+def test_catalog_ko_header_matches_the_tree():
+    """catalog/README_KO.md 'vX.Y: N항목' header must equal the tree total."""
+    import re
+    total = sum(_catalog_counts().values())
+    header = re.search(r'v[\d.]+:\s*(\d+)\s*항목',
+                       (REPO / "catalog" / "README_KO.md").read_text(encoding="utf-8"))
+    assert header, "catalog/README_KO.md lost its 'vX.Y: N항목' header"
+    assert int(header.group(1)) == total, (
+        f"catalog/README_KO.md header says {header.group(1)}, tree has {total}")
+
+
+def test_catalog_ko_per_category_table_matches_the_tree():
+    """catalog/README_KO.md per-category table must equal the tree, like the EN one."""
+    import re
+    per = _catalog_counts()
+    txt = (REPO / "catalog" / "README_KO.md").read_text(encoding="utf-8")
+    rows = re.findall(r'\[(\w[\w-]*)/\]\([^)]*\)[^|]*\|[^|]*\|\s*(\d+)\s*\|', txt)
+    assert rows, "catalog/README_KO.md category table not found"
+    for name, claimed in rows:
+        assert name in per, f"table lists unknown category {name!r}"
+        assert int(claimed) == per[name], (
+            f"catalog/README_KO.md says {name}={claimed}, tree has {per[name]}")

@@ -1373,9 +1373,22 @@ def multiple_comparisons_check(ledger_path: str, *, alpha: float = 0.05) -> Find
 _NEG_VERDICTS = ("KILL", "FAIL", "FALSIF", "RETRACT", "NEGATIVE", "REJECT")
 _POS_VERDICTS = ("PASS", "SUPPORTED", "CONFIRMED", "WORTH", "OK")
 _RESULT_KEYS = ("reported_acc", "acc", "result", "value", "metric_value", "reported_value")
+# Payload keys that carry a categorical verdict. Non-ASCII keys are here because
+# ledgers written by Korean-language agents use them; a resolution recorded under
+# "판정" is just as sealed as one under "verdict".
+_VERDICT_KEYS = ("verdict", "판정", "결과")
+# Free-text fallbacks, tried in order — first match wins, so the *headline* verdict
+# is recovered when a sentence also mentions a secondary one
+# (e.g. "… = KILL(delta below bar) · monotone PASS" resolves to KILL, not PASS).
+_VERDICT_PATTERNS = (
+    r"VERDICT\b.*?=\s*([A-Za-z_][\w-]*)",          # "VERDICT c1 = KILL"
+    r"\bverdict\b[^:=\n]{0,60}[:=]\s*([A-Za-z_][\w-]*)",   # "verdict <name>: KILL(…)"
+    r"판정\s*[:=]\s*\W{0,3}([A-Za-z_][\w-]*)",      # "M7c 판정: 🔴DISPERSION_FRAGILE"
+    r"결과\s*[:=]\s*\W{0,3}([A-Za-z_][\w-]*)",      # "<claim> 결과=PASS(scope=…)"
+)
 
 
-def _recover_resolution(ledger_path: str, claim_id: str, am_ledger: str | None = None):
+def recover_resolution(ledger_path, claim_id: str, am_ledger=None):
     """Find a *sealed* resolution for claim_id so falsifiability can self-evaluate.
 
     Returns (kind, value):
@@ -1383,10 +1396,24 @@ def _recover_resolution(ledger_path: str, claim_id: str, am_ledger: str | None =
       ('acc', float)         — an am_record(target=claim_id) carries a numeric result,
       ('verdict', 'KILL'…)   — an am_record(target=claim_id) carries a categorical verdict,
       (None, None)           — nothing sealed yet.
-    Scans the claims ledger (retractions + any co-located actions) and, if given, the
-    action ledger. A retraction wins; otherwise a numeric result wins over a verdict label.
+
+    `ledger_path` and `am_ledger` each accept a path or a sequence of paths, because a
+    project's claims routinely live across many ledger files; passing one concatenated
+    file would otherwise be forced on the caller. A retraction wins; otherwise a numeric
+    result wins over a verdict label.
+
+    A verdict is read from a payload key first (`verdict`, and the Korean `판정`/`결과`),
+    then from the action text. Recovery stays deliberately conservative: an entry whose
+    verdict cannot be identified yields (None, None) so the caller keeps its WARN path —
+    an unrecovered resolution is a human's problem, a *misrecovered* one is a wrong answer.
     """
-    files = [ledger_path] + ([am_ledger] if am_ledger and am_ledger != ledger_path else [])
+    def _paths(p):
+        if p is None:
+            return []
+        return [p] if isinstance(p, (str, bytes, os.PathLike)) else [str(x) for x in p]
+
+    files = _paths(ledger_path)
+    files += [p for p in _paths(am_ledger) if p not in files]
     acc, verdict = None, None
     for f in files:
         if not os.path.exists(f):
@@ -1410,16 +1437,25 @@ def _recover_resolution(ledger_path: str, claim_id: str, am_ledger: str | None =
                                 acc = float(pv[kk])
                                 break
                     if verdict is None:
-                        v = pv.get("verdict") if isinstance(pv.get("verdict"), str) else None
+                        v = next((pv[k] for k in _VERDICT_KEYS
+                                  if isinstance(pv.get(k), str) and pv[k].strip()), None)
                         if v is None:
-                            m = re.search(r"VERDICT\b.*?=\s*([A-Za-z_-]+)", e.get("action", "") or "", re.I)
-                            v = m.group(1) if m else None
+                            text = e.get("action", "") or ""
+                            for pat in _VERDICT_PATTERNS:
+                                m = re.search(pat, text, re.I)
+                                if m:
+                                    v = m.group(1)
+                                    break
                         verdict = v
     if acc is not None:
         return "acc", acc
     if verdict is not None:
         return "verdict", verdict
     return None, None
+
+
+# Kept so callers pinned to the pre-0.34 private name keep working.
+_recover_resolution = recover_resolution
 
 
 def falsifiability_check(ledger_path: str, claim_id: str, *,

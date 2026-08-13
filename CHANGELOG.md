@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.34.0] — 2026-08-12
+
+### Added
+- **`recover_resolution` is public.** Finding a claim's sealed resolution was
+  already implemented — `falsifiability_check` has used it since the
+  auto-resolution work — but only as a private `_recover_resolution`, so an
+  auditor outside this package could not reuse it. The one that tried
+  reimplemented the search by hand and recovered *fewer* resolutions than the
+  function it did not know existed. A capability the product already has, that
+  callers must rebuild to use, is a packaging defect rather than a missing
+  feature. `_recover_resolution` remains as an alias for pre-0.34 callers.
+
+### Changed
+- **Resolution recovery reads the shapes ledgers actually use.** Previously a
+  verdict was recovered from `payload.verdict` or from an action matching
+  `VERDICT … = X`. Ledgers also record the same fact under the Korean payload
+  keys `판정`/`결과`, and in prose (`verdict <claim>: KILL(…)`, `<claim> 결과=PASS(…)`,
+  `M7c 판정: 🔴…`). Those now resolve too. Measured on a 583-claim ledger set,
+  unresolved claims fell 148 → 124.
+  - Patterns are tried in order and **first match wins**, so a sentence naming a
+    headline verdict and a secondary one — `KILL(delta below bar) · monotone PASS`
+    — resolves to the headline. A test pins that contract.
+  - Recovery stays conservative by design: an unidentifiable verdict still
+    yields `(None, None)` and the caller keeps its WARN path. An unrecovered
+    resolution is a human's problem; a *misrecovered* one is a wrong answer.
+- **`ledger_path` / `am_ledger` accept a sequence of paths.** A project's claims
+  routinely span many ledger files (63 in the case that motivated this), and the
+  single-path signature forced callers to concatenate them into a temp file on
+  every run. Passing a list now works; a single path behaves exactly as before.
+
+---
+
 ## [0.33.0] — 2026-08-10
 
 ### Added

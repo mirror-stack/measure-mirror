@@ -27,7 +27,7 @@ from .mm import (
     ranking_stability_check,
     # helpers
     wilson_ci, lookup_baseline, lookup_reproduction, record_reproduction,
-    catch_history, report, Finding,
+    catch_history, report, Finding, recover_resolution,
 )
 
 __all__ = [
@@ -44,6 +44,6 @@ __all__ = [
     "judge_score_sanity", "judge_swap_check", "judge_transitivity_check",
     "ranking_stability_check",
     "wilson_ci", "lookup_baseline", "lookup_reproduction", "record_reproduction",
-    "catch_history", "report", "Finding",
+    "catch_history", "report", "Finding", "recover_resolution",
 ]
-__version__ = "0.33.0"
+__version__ = "0.34.0"

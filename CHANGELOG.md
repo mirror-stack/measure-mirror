@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.38.0] — 2026-08-15
+
+### Fixed
+- **Sealed timestamps are UTC with an explicit `Z`.** `preregister`, `retract`
+  and the judge log wrote `time.strftime("%Y-%m-%dT%H:%M:%S")` — local
+  wall-clock with **no timezone marker at all** — while the anchor helpers in
+  the same module, and the sibling action / provenance ledgers, already wrote
+  UTC+Z. Sealed entries from the two families therefore sat on different clocks
+  and nothing in the string said which.
+
+  That breaks the one audit a hash-chained ledger is uniquely able to answer:
+  *did the seal exist before the result did?* Measured on a real ledger before
+  writing this: of 28 claims whose seal and resolution were both recorded, the
+  naive comparison reported **28 of 28 out of order** — "every claim was sealed
+  after its result was known". Normalising the two clocks flipped it to **28 of
+  28 correctly ordered**. The failure direction is the dangerous one: it accuses
+  the ledger's own author of peeking, from a defect in the instrument.
+
+  Legacy entries are left exactly as sealed — rewriting them would break the
+  chain, so they stay ambiguous by construction. Only entries written from here
+  on carry their timezone. Readers that parse `ts` must therefore still expect
+  both forms in any ledger that predates this release.
+
+### Added
+- `tests/test_utc_timestamps.py` — every entry the library writes carries a
+  `Z` timestamp, timestamps from different writers sort correctly against each
+  other, and an AST guard fails if a timezone-less `strftime` reappears. (The
+  guard parses rather than greps: its first version matched the old format
+  string quoted inside a docstring and failed on documentation.)
+
+---
+
 ## [0.37.0] — 2026-08-14
 
 ### Added

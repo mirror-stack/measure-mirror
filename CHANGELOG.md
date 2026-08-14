@@ -5,6 +5,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.36.0] — 2026-08-14
+
+### Added
+- **⑪ the result side of #47: a metric-named number in the resolution, and honesty
+  when there isn't one.** `kill_threshold` is sealed and structured; the result that
+  resolves the claim mostly is not. Measured on one real ledger before writing this:
+  of 133 resolved-negative claims, exactly **1** carried a number
+  `falsifiability_check` could grade. The ledger held the conclusion (`"KILL"`,
+  `"K3_UNINFORMATIVE"`), not the measurement — the gate was well-built and almost
+  never got to run. Three changes, all on the reading side, none required of writers:
+
+  - A resolving `am_record` payload can attribute its number to the sealed quantity —
+    `{"verdict": "KILL", "metric": "open_path_flip_count", "value": 0.0}` — and
+    recovery prefers a metric-matched number over a bare one. A number the payload
+    explicitly attributes to a *different* metric is not graded at all, not even as
+    a fallback: an unrecovered resolution is a human's problem, a misrecovered one
+    is a wrong answer.
+  - `recover_resolution` grew an optional `metric=` (the sealed quantity name,
+    normally `kill_threshold["metric"]` — the key ⑫g now insists exists). A payload
+    key equal to that name is recovered too. Equality is exact after trim/casefold —
+    never substring, never separator-folded; a registry alias that folded
+    `human-eval` into `human eval` fired on human-EVALUATION score columns the same
+    week this was written.
+  - A sealed **positive** verdict with no gradable number now returns **WARN, not
+    OK**: "not falsified" rested on the label alone, and nothing could ever re-check
+    the sealed bar. A sealed negative verdict stays FAIL — trusting a self-reported
+    death is safe against inflation; trusting a self-reported survival is exactly
+    how inflation happens — but its message now says plainly that the threshold
+    itself was never machine-checked, so audits can count "died by its own
+    criterion" apart from "died, label only".
+
+### Changed
+- `tests/test_auto_resolution.py`: three tests asserted OK for a label-only PASS
+  (payload key, Korean payload key, action text). That OK is the behaviour #47
+  measures the cost of; they now assert the WARN and its wording.
+
+---
+
 ## [0.35.0] — 2026-08-14
 
 ### Added

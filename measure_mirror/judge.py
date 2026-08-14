@@ -354,7 +354,7 @@ def judge_run(
 
     entry: dict = {
         "_type":          "judge_run",
-        "ts":             time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "ts":             mm._utc_now(),
         "claim_id":       claim_id,
         "n_items":        n_total,
         "runs":           runs,

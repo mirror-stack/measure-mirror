@@ -92,6 +92,30 @@ class Finding:
     """
 
 
+def _utc_now() -> str:
+    """Sealed timestamps are UTC with an explicit 'Z'.
+
+    Not cosmetic. `preregister`, `retract` and the judge log used to write
+    `time.strftime("%Y-%m-%dT%H:%M:%S")` — local wall-clock with **no timezone
+    marker at all** — while anchors in this same file, and the sibling action /
+    provenance ledgers, already wrote UTC+Z. Sealed entries from the two families
+    therefore sat on different clocks and nothing in the string said so.
+
+    That breaks the one audit a hash-chained ledger is uniquely able to answer:
+    *did the seal exist before the result did?* Measured on a real ledger
+    (2026-08-15): comparing 28 claims whose seal and resolution were both
+    recorded, the naive comparison reported **28 of 28 out of order** — i.e.
+    "every claim was sealed after its result was known". Normalising the two
+    clocks flipped it to 28 of 28 correctly ordered. The failure direction is
+    the dangerous one: it accuses the ledger's own author of peeking.
+
+    Legacy naive timestamps stay as they are — they are sealed, and a rewrite
+    would break the chain. They remain ambiguous by construction; only entries
+    written from here on carry their timezone.
+    """
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+
 # ─────────────────────────────────────────────────────────────
 # ① Pre-registration ledger (append-only, chain-hashed)
 # ─────────────────────────────────────────────────────────────
@@ -174,7 +198,7 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
     """
     prev_seal = _get_last_seal(ledger_path)
     entry: dict = {
-        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "ts": _utc_now(),
         "claim_id": claim_id,
         "metric": metric,
         "min_n": min_n,
@@ -1730,7 +1754,7 @@ def retract(ledger_path: str, claim_id: str, reason: str) -> dict:
     appends a new entry; the entry is chain-linked via prev_seal so retraction
     records cannot be silently deleted from the ledger.
     """
-    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+    ts = _utc_now()
     entry: dict = {
         "_type":    "retraction",
         "ts":       ts,

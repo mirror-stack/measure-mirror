@@ -162,6 +162,11 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
         "manipulation-check", "positive-control"). _preseal_lint()/prereg_lint()
         read them back; declaring none draws an INFO nudge. These are the
         checks that catch a KILL before compute is spent.
+        An entry may be a bare name, or an object recording what the check
+        returned — {"name": "neutral-control", "result": "not_fired", "n": 30},
+        any extra keys preserved. A bare name declares work without recording
+        it, so the lint WARNs (⑫h) and no later audit can aggregate its outcome;
+        read them back with declared_pre_seal_checks().
 
     Chain link: deleting or inserting entries breaks the chain and is
     detected by verify_chain(). Complete ledger replacement is NOT caught
@@ -220,6 +225,18 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
     if known_confounds:
         entry["known_confounds"] = list(known_confounds)
     if pre_seal_checks:
+        # Validate at seal time — fail fast while it can still be fixed. A dict
+        # entry with no `name` names no check, and pre-registration is
+        # first-write-wins, so it could not be corrected under the same claim_id.
+        for c in pre_seal_checks:
+            if isinstance(c, dict) and not str(c.get("name") or "").strip():
+                raise ValueError(
+                    "pre_seal_checks entry is an object with no 'name': "
+                    f"{c!r}. Use {{'name': '<check>', 'result': '<what it returned>'}} "
+                    "or a bare check name.")
+            if not isinstance(c, (str, dict)) or (isinstance(c, str) and not c.strip()):
+                raise ValueError(
+                    f"pre_seal_checks entry must be a check name or an object: {c!r}")
         entry["pre_seal_checks"] = list(pre_seal_checks)
     entry["seal"] = hashlib.sha256(
         json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
@@ -315,6 +332,9 @@ def _falsifiability_eval(pre: dict, reported_acc: float | None) -> Finding:
 #   ⑫e  no cheap pre-seal machine-checks declared (reachability / accounting
 #       / neutral-control / manipulation) — the checks that catch a KILL
 #       before compute is spent.
+#   ⑫h  a declared pre-seal check that recorded nothing about itself → the
+#       list names work but carries no outcome, so no later audit can
+#       aggregate it (the ⑫b/⑫g shape, one field over).
 #   ⑫g  a structured kill_threshold that names no metric → the bar is sealed
 #       but nothing says what it is a bar OF, so auto-evaluation has no key
 #       to look for. The mirror image of ⑫b.
@@ -377,6 +397,39 @@ KNOWN_PRESEAL_CHECKS = (
     "manipulation-check",     # does the intended lever actually move its proxy?
     "positive-control",       # does a known-true anchor reproduce?
 )
+
+
+def _preseal_entries(checks) -> list[dict]:
+    """Normalise a pre_seal_checks list to dicts, keeping the bare/structured
+    distinction in `_bare`. A bare string names a check and records nothing about
+    it; a dict may carry `result`, `n`, `artifact_sha256`, whatever the author had.
+    Entries that are neither are dropped — a check nobody can name is not a check.
+    """
+    out = []
+    for c in checks or ():
+        if isinstance(c, str) and c.strip():
+            out.append({"name": c.strip(), "_bare": True})
+        elif isinstance(c, dict):
+            name = str(c.get("name") or "").strip()
+            if name:
+                out.append({**c, "name": name, "_bare": False})
+    return out
+
+
+def declared_pre_seal_checks(ledger_path, claim_id: str) -> list[dict]:
+    """The pre-seal checks a claim declared, normalised to dicts.
+
+    Each entry has at least `name`, plus `_bare=True` when the seal recorded only
+    the name and nothing a machine can read back. Whatever else the author sealed
+    (`result`, `n`, `artifact_sha256`, …) is passed through untouched.
+
+    This is the accessor an audit aggregates over — e.g. collecting the outcome of
+    every declared `neutral-control` across a ledger. Entries sealed as bare strings
+    have no outcome to collect, which is the gap ⑫h warns about at seal time.
+    Returns [] when the claim has no pre-registration or declared no checks.
+    """
+    pre = _load_prereg(ledger_path, claim_id)
+    return _preseal_entries(pre.get("pre_seal_checks")) if pre else []
 
 
 def _preseal_lint(pre: dict) -> list["Finding"]:
@@ -472,11 +525,28 @@ def _preseal_lint(pre: dict) -> list["Finding"]:
             "run and declare the cheap ones (pre_seal_checks=[...]): "
             + ", ".join(KNOWN_PRESEAL_CHECKS) + "."))
     else:
-        unknown = [c for c in checks if c not in KNOWN_PRESEAL_CHECKS]
+        entries = _preseal_entries(checks)
+        names = [e["name"] for e in entries]
+        unknown = [n for n in names if n not in KNOWN_PRESEAL_CHECKS]
         note = f" (unrecognised: {unknown})" if unknown else ""
         findings.append(Finding(
             P, "OK",
-            f"'{cid}' declared pre-seal checks: {', '.join(checks)}{note}."))
+            f"'{cid}' declared pre-seal checks: {', '.join(names)}{note}."))
+
+        # ⑫h — a declared check that recorded nothing about itself.
+        # The list is a claim about work, carried inside the artifact whose whole
+        # purpose is to make claims checkable. WARN, not FAIL: bare strings are
+        # legitimate for checks with no artifact, and a FAIL here would invalidate
+        # every seal already written.
+        bare = [e["name"] for e in entries if e["_bare"]]
+        if bare:
+            findings.append(Finding(
+                P, "WARN",
+                f"'{cid}' declares {len(bare)} pre-seal check(s) with nothing recorded "
+                f"about them ({', '.join(bare)}) — a reader cannot tell these ran. "
+                "Seal each as an object instead: {'name': '<check>', 'result': "
+                "'<what it returned>'} (plus 'n', 'artifact_sha256', … as they apply), "
+                "so a later audit can aggregate the outcome instead of the intention."))
 
     return findings
 

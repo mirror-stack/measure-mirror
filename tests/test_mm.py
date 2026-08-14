@@ -916,7 +916,8 @@ def test_prereg_lint_clean_on_healthy_seal(tmp_path):
     mm.preregister(ledger, "good", metric="acc", min_n=200, baseline=0.5,
                    pass_threshold=0.6,
                    kill_threshold={"metric": "acc", "threshold": 0.55, "direction": "below"},
-                   pre_seal_checks=["reachability-smoke", "neutral-control"])
+                   pre_seal_checks=[{"name": "reachability-smoke", "result": "unreachable"},
+                                    {"name": "neutral-control", "result": "not_fired", "n": 30}])
     fs = mm.prereg_lint(ledger, "good")
     assert not [f for f in fs if f.level in ("WARN", "FAIL")]
 

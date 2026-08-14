@@ -5,6 +5,48 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.37.0] — 2026-08-14
+
+### Added
+- **⑫h — a declared pre-seal check that recorded nothing about itself.** This is
+  the half of #47 the issue was actually opened on, and the one #48/#49 left
+  standing: `pre_seal_checks=["neutral-control"]` names work and records no
+  outcome, so the seal reads as if a machine check ran while nothing can tell
+  whether it did — a claim about work, carried inside the artifact whose whole
+  purpose is to make claims checkable.
+
+  An entry may now be an object instead of a bare name:
+
+  ```python
+  pre_seal_checks=[
+      {"name": "neutral-control", "result": "not_fired", "n": 30},
+      {"name": "parser-unit-tests", "result": "8/8", "artifact_sha256": "8ddf93…"},
+      "registry-verification-gate",          # bare name still accepted
+  ]
+  ```
+
+  Extra keys are preserved verbatim. Bare names stay valid — they are legitimate
+  for checks with no artifact, and a FAIL would invalidate every seal already
+  written — so the lint emits **WARN**, naming only the bare ones. An object with
+  no `name` is rejected at seal time instead: pre-registration is
+  first-write-wins, so it could not be corrected under the same claim_id.
+
+- **`declared_pre_seal_checks(ledger_path, claim_id)`** — the declared checks,
+  normalised to dicts, each with at least `name` and `_bare`. This is the
+  accessor an audit aggregates over: collecting the outcome of every declared
+  `neutral-control` across a ledger is the measurement that could not be done
+  when 175 declared neutral controls had 6 machine-readable results.
+
+### Changed
+- Three tests asserted that a seal declaring bare-string checks lints clean.
+  That "clean" is the state #47 describes, so their fixtures now record what each
+  check returned; the assertions are unchanged.
+- `mm_preregister`'s MCP schema accepts object entries (`{"name", …}`) alongside
+  strings — without this the structured form could not reach the library through
+  the server.
+
+---
+
 ## [0.36.0] — 2026-08-14
 
 ### Added

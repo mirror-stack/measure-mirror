@@ -167,7 +167,8 @@ def test_preregister_persists_pre_seal_checks_and_lint_reads_them(tmp_path):
     led = str(tmp_path / "l.jsonl")
     e = mm.preregister(led, "c", metric="acc", min_n=200, baseline=0.5,
                        pass_threshold=0.6,
-                       kill_threshold={"threshold": 0.55, "direction": "below"},
+                       kill_threshold={"metric": "acc", "threshold": 0.55,
+                                       "direction": "below"},
                        pre_seal_checks=["reachability-smoke"])
     assert e["pre_seal_checks"] == ["reachability-smoke"]
     fs = mm.prereg_lint(led, "c")
@@ -195,3 +196,39 @@ def test_prereg_lint_missing_claim(tmp_path):
                    kill_threshold={"threshold": 0.55, "direction": "below"})
     fs = mm.prereg_lint(led, "nope")
     assert fs[0].level == "WARN" and "No pre-registration" in fs[0].msg
+
+
+# ── ⑫g threshold with no metric name ─────────────────────────────────────────
+# `preregister` validates that `threshold` is numeric and `direction` is below/above,
+# but accepts a kill_threshold carrying no `metric`. Auto-evaluation then has no key to
+# look for in the sealed result: the bar is sealed, what it is a bar OF is not.
+def test_threshold_without_metric_warns():
+    pre = {"claim_id": "c", "metric": "a prose description of the quantity",
+           "min_n": 200, "baseline": 0.5, "pass_threshold": 0.6,
+           "kill_condition": "x",
+           "kill_threshold": {"threshold": 0.5, "direction": "below"}}
+    msgs = _msgs(mm._preseal_lint(pre))
+    assert "names no metric" in msgs
+    assert ("㉗ prereg-lint", "WARN") in _levels(mm._preseal_lint(pre))
+
+
+def test_named_metric_suppresses_the_warning():
+    pre = {"claim_id": "c", "metric": "acc", "min_n": 200, "baseline": 0.5,
+           "pass_threshold": 0.6, "kill_condition": "x",
+           "kill_threshold": {"metric": "acc", "threshold": 0.5, "direction": "below"}}
+    assert "names no metric" not in _msgs(mm._preseal_lint(pre))
+
+
+def test_blank_or_whitespace_metric_counts_as_missing():
+    for bad in ("", "   ", None):
+        pre = {"claim_id": "c", "metric": "acc", "min_n": 200, "baseline": 0.5,
+               "pass_threshold": 0.6, "kill_condition": "x",
+               "kill_threshold": {"metric": bad, "threshold": 0.5}}
+        assert "names no metric" in _msgs(mm._preseal_lint(pre)), repr(bad)
+
+
+def test_text_only_kill_does_not_trigger_the_metric_warning():
+    # No structured threshold at all is ⑫b's business, not ⑫g's.
+    pre = {"claim_id": "c", "metric": "acc", "min_n": 200, "baseline": 0.5,
+           "pass_threshold": 0.6, "kill_condition": "fails if it stops converging"}
+    assert "names no metric" not in _msgs(mm._preseal_lint(pre))

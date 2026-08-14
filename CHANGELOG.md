@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.35.0] — 2026-08-14
+
+### Added
+- **⑫g pre-seal lint: a threshold that does not say what it is a threshold *of*.**
+  `preregister` already rejects a `kill_threshold` whose `threshold` is not numeric
+  and whose `direction` is not `below|above` — but accepts one carrying no `metric`
+  at all, and the lint said nothing. Auto-evaluation then has no key to look for in
+  the sealed result, so `falsifiability_check` can never grade the claim by itself:
+  the bar is sealed, the quantity it bars is not. This is the mirror image of ⑫b
+  ("you wrote a number you could structure") and just as blinding.
+
+  Measured on one real ledger before writing this: of 133 resolved-negative claims,
+  **61 are sealed with a metric-less threshold**, and only **1** could be graded
+  mechanically end-to-end. The library's own test-suite contained a metric-less
+  threshold as scaffolding, which is a fair sign this is easy to omit rather than a
+  user error. WARN, not FAIL — every seal already written stays valid, the gap just
+  becomes countable.
+
+### Changed
+- `tests/test_preseal_lint.py`: one round-trip test used a metric-less
+  `kill_threshold` as scaffolding and asserted a clean lint. Its subject is
+  `pre_seal_checks` persistence, so the threshold now names its metric; the
+  assertion is unchanged.
+
+---
+
 ## [0.34.0] — 2026-08-12
 
 ### Added

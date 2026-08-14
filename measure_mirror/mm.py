@@ -315,6 +315,9 @@ def _falsifiability_eval(pre: dict, reported_acc: float | None) -> Finding:
 #   ⑫e  no cheap pre-seal machine-checks declared (reachability / accounting
 #       / neutral-control / manipulation) — the checks that catch a KILL
 #       before compute is spent.
+#   ⑫g  a structured kill_threshold that names no metric → the bar is sealed
+#       but nothing says what it is a bar OF, so auto-evaluation has no key
+#       to look for. The mirror image of ⑫b.
 # Pure over a single pre-registration dict; no I/O.
 # ─────────────────────────────────────────────────────────────
 
@@ -414,6 +417,19 @@ def _preseal_lint(pre: dict) -> list["Finding"]:
             f"'{cid}' kill_condition names a threshold ({kill_cond[:50]!r}) but has no "
             "structured kill_threshold= — falsifiability_check cannot auto-evaluate it. "
             "Add kill_threshold={'metric','threshold','direction'}."))
+
+    # ⑫g — a threshold that does not say what it is a threshold OF.
+    # `preregister` validates that `threshold` is numeric and `direction` is below/above,
+    # but accepts a kill_threshold with no `metric` at all. Auto-evaluation then has no
+    # key to look for in the sealed result, so falsifiability_check can never grade the
+    # claim by itself — the mirror image of ⑫b, and just as blinding.
+    if isinstance(kill_thr, dict) and not str(kill_thr.get("metric") or "").strip():
+        findings.append(Finding(
+            P, "WARN",
+            f"'{cid}' kill_threshold sets a bar ({kill_thr.get('threshold')!r}) but names "
+            "no metric — nothing says what quantity it is a threshold of, so "
+            "falsifiability_check cannot auto-evaluate this claim later. "
+            "Add kill_threshold={'metric': '<the quantity>', ...}."))
 
     # ⑫c — pass bar at or below chance.
     # Floor = an EXPLICITLY declared `chance` only. In practice `baseline` is a

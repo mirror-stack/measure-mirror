@@ -46,4 +46,4 @@ __all__ = [
     "wilson_ci", "lookup_baseline", "lookup_reproduction", "record_reproduction",
     "catch_history", "report", "Finding", "recover_resolution",
 ]
-__version__ = "0.35.0"
+__version__ = "0.36.0"

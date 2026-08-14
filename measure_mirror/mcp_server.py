@@ -220,9 +220,14 @@ async def list_tools() -> list[types.Tool]:
             description=(
                 "⑪ Popper gate: verify that a kill-condition was registered and "
                 "auto-evaluate it against the reported result. "
-                "FAIL when kill_threshold is triggered (claim falsified by its own criterion). "
-                "WARN when no kill-condition exists (unfalsifiable claim). "
+                "FAIL when kill_threshold is triggered (claim falsified by its own criterion) "
+                "or a sealed negative resolution exists (retraction / KILL verdict). "
+                "WARN when no kill-condition exists (unfalsifiable claim), no result is "
+                "sealed yet, or the resolution is a bare POSITIVE verdict label with no "
+                "gradable number — a PASS nothing can re-check. "
                 "OK when threshold is not triggered or text-only condition is registered. "
+                "Recovery prefers a number the resolving am_record attributes to the sealed "
+                "metric ({'metric','value'} in the payload). "
                 "Runs automatically inside mm_audit — call standalone to check without full audit."
             ),
             inputSchema={

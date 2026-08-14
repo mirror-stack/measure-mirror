@@ -1389,6 +1389,15 @@ def multiple_comparisons_check(ledger_path: str, *, alpha: float = 0.05) -> Find
 _NEG_VERDICTS = ("KILL", "FAIL", "FALSIF", "RETRACT", "NEGATIVE", "REJECT")
 _POS_VERDICTS = ("PASS", "SUPPORTED", "CONFIRMED", "WORTH", "OK")
 _RESULT_KEYS = ("reported_acc", "acc", "result", "value", "metric_value", "reported_value")
+
+
+def _norm_metric_name(s) -> str:
+    # Exact-after-trim comparison only. No separator folding and no substring
+    # matching: a registry alias that folded "human-eval" to "human eval" fired
+    # on human-EVALUATION score columns, and substring verdict markers have
+    # over-captured four separate times in one project's ledger audits. A missed
+    # match keeps the WARN path; a false one grades the wrong quantity.
+    return str(s).strip().casefold()
 # Payload keys that carry a categorical verdict. Non-ASCII keys are here because
 # ledgers written by Korean-language agents use them; a resolution recorded under
 # "판정" is just as sealed as one under "verdict".
@@ -1404,24 +1413,23 @@ _VERDICT_PATTERNS = (
 )
 
 
-def recover_resolution(ledger_path, claim_id: str, am_ledger=None):
-    """Find a *sealed* resolution for claim_id so falsifiability can self-evaluate.
+def _recover_resolution_detail(ledger_path, claim_id: str, am_ledger=None, metric=None):
+    """Internal recover_resolution that also reports HOW a number was found:
 
-    Returns (kind, value):
-      ('retracted', reason)  — a retraction is sealed for the claim,
-      ('acc', float)         — an am_record(target=claim_id) carries a numeric result,
-      ('verdict', 'KILL'…)   — an am_record(target=claim_id) carries a categorical verdict,
-      (None, None)           — nothing sealed yet.
+      'attributed' — the payload attributes its number to the sealed quantity:
+                     {"metric": "<the sealed name>", "value": …}
+      'named-key'  — the payload carries the number under a key equal to the
+                     sealed metric name (exact after trim/casefold — never
+                     substring, never separator-folded)
+      'bare'       — a number under a generic result key, with no metric name
+      'verdict' / 'retracted' — as before.
 
-    `ledger_path` and `am_ledger` each accept a path or a sequence of paths, because a
-    project's claims routinely live across many ledger files; passing one concatenated
-    file would otherwise be forced on the caller. A retraction wins; otherwise a numeric
-    result wins over a verdict label.
-
-    A verdict is read from a payload key first (`verdict`, and the Korean `판정`/`결과`),
-    then from the action text. Recovery stays deliberately conservative: an entry whose
-    verdict cannot be identified yields (None, None) so the caller keeps its WARN path —
-    an unrecovered resolution is a human's problem, a *misrecovered* one is a wrong answer.
+    The tier lets the caller say honestly whether the graded number is *known*
+    to be of the sealed quantity or merely assumed to be. A number the payload
+    explicitly attributes to a DIFFERENT metric is not recovered at all — not
+    even as a bare candidate — because grading a measurement of some other
+    quantity against this claim's threshold is a misrecovery, and a
+    misrecovered resolution is a wrong answer.
     """
     def _paths(p):
         if p is None:
@@ -1430,7 +1438,8 @@ def recover_resolution(ledger_path, claim_id: str, am_ledger=None):
 
     files = _paths(ledger_path)
     files += [p for p in _paths(am_ledger) if p not in files]
-    acc, verdict = None, None
+    want = _norm_metric_name(metric) if metric else None
+    attributed, named, bare, verdict = None, None, None, None
     for f in files:
         if not os.path.exists(f):
             continue
@@ -1444,14 +1453,29 @@ def recover_resolution(ledger_path, claim_id: str, am_ledger=None):
                 except json.JSONDecodeError:
                     continue
                 if e.get("_type") == "retraction" and e.get("claim_id") == claim_id:
-                    return "retracted", e.get("reason", "")
+                    return "retracted", e.get("reason", ""), "retracted"
                 if e.get("_type") == "action" and e.get("target") == claim_id:
                     pv = e.get("payload") if isinstance(e.get("payload"), dict) else {}
-                    if acc is None:
-                        for kk in _RESULT_KEYS:
-                            if isinstance(pv.get(kk), (int, float)) and not isinstance(pv.get(kk), bool):
-                                acc = float(pv[kk])
-                                break
+                    declared = pv.get("metric")
+                    declared = (_norm_metric_name(declared)
+                                if isinstance(declared, str) and declared.strip() else None)
+                    num = next((float(pv[kk]) for kk in _RESULT_KEYS
+                                if isinstance(pv.get(kk), (int, float))
+                                and not isinstance(pv.get(kk), bool)), None)
+                    if want:
+                        if attributed is None and declared == want and num is not None:
+                            attributed = num
+                        if named is None:
+                            for k, v in pv.items():
+                                if (_norm_metric_name(k) == want
+                                        and isinstance(v, (int, float))
+                                        and not isinstance(v, bool)):
+                                    named = float(v)
+                                    break
+                        if bare is None and declared is None and num is not None:
+                            bare = num
+                    elif bare is None and num is not None:
+                        bare = num
                     if verdict is None:
                         v = next((pv[k] for k in _VERDICT_KEYS
                                   if isinstance(pv.get(k), str) and pv[k].strip()), None)
@@ -1463,11 +1487,45 @@ def recover_resolution(ledger_path, claim_id: str, am_ledger=None):
                                     v = m.group(1)
                                     break
                         verdict = v
-    if acc is not None:
-        return "acc", acc
+    if attributed is not None:
+        return "acc", attributed, "attributed"
+    if named is not None:
+        return "acc", named, "named-key"
+    if bare is not None:
+        return "acc", bare, "bare"
     if verdict is not None:
-        return "verdict", verdict
-    return None, None
+        return "verdict", verdict, "verdict"
+    return None, None, None
+
+
+def recover_resolution(ledger_path, claim_id: str, am_ledger=None, metric=None):
+    """Find a *sealed* resolution for claim_id so falsifiability can self-evaluate.
+
+    Returns (kind, value):
+      ('retracted', reason)  — a retraction is sealed for the claim,
+      ('acc', float)         — an am_record(target=claim_id) carries a numeric result,
+      ('verdict', 'KILL'…)   — an am_record(target=claim_id) carries a categorical verdict,
+      (None, None)           — nothing sealed yet.
+
+    `ledger_path` and `am_ledger` each accept a path or a sequence of paths, because a
+    project's claims routinely live across many ledger files; passing one concatenated
+    file would otherwise be forced on the caller. A retraction wins; otherwise a numeric
+    result wins over a verdict label.
+
+    `metric` (optional) is the sealed quantity name, normally
+    `kill_threshold["metric"]`. When given, recovery prefers a number the payload
+    attributes to that name — `{"metric": "<name>", "value": …}` — then a payload
+    key equal to the name (exact after trim/casefold; never substring), then a bare
+    result key. A number the payload attributes to a *different* metric is not
+    recovered at all: it is a measurement of some other quantity.
+
+    A verdict is read from a payload key first (`verdict`, and the Korean `판정`/`결과`),
+    then from the action text. Recovery stays deliberately conservative: an entry whose
+    verdict cannot be identified yields (None, None) so the caller keeps its WARN path —
+    an unrecovered resolution is a human's problem, a *misrecovered* one is a wrong answer.
+    """
+    kind, val, _how = _recover_resolution_detail(ledger_path, claim_id, am_ledger, metric)
+    return kind, val
 
 
 # Kept so callers pinned to the pre-0.34 private name keep working.
@@ -1483,9 +1541,12 @@ def falsifiability_check(ledger_path: str, claim_id: str, *,
 
     Levels:
       FAIL — kill_threshold is registered AND reported_acc triggers it
-             (the claim falsified itself by its own pre-registered criterion)
-      WARN — no kill-condition at all (unfalsifiable), or kill_threshold
-             registered but reported_acc not yet provided
+             (the claim falsified itself by its own pre-registered criterion),
+             or a sealed negative resolution (retraction / KILL verdict)
+      WARN — no kill-condition at all (unfalsifiable), kill_threshold
+             registered but no result sealed yet, or the resolution is a bare
+             POSITIVE verdict label with no gradable number — "not falsified"
+             would rest on the label alone
       OK   — kill threshold not triggered, or text-only condition registered
 
     Call standalone before publishing, or it runs automatically inside audit().
@@ -1496,28 +1557,55 @@ def falsifiability_check(ledger_path: str, claim_id: str, *,
                        f"No pre-registration for '{claim_id}' — "
                        "kill-condition unknown.")
 
+    kill_thr = pre.get("kill_threshold")
+    sealed_metric = (str(kill_thr.get("metric") or "").strip() or None
+                     if isinstance(kill_thr, dict) else None)
+
     # Auto-resolution: if no result was handed in, recover one from a sealed
     # resolution (retraction / am_record) instead of warning "not yet provided".
     note = ""
     if reported_acc is None:
-        kind, val = _recover_resolution(ledger_path, claim_id, am_ledger)
+        kind, val, how = _recover_resolution_detail(ledger_path, claim_id, am_ledger,
+                                                    metric=sealed_metric)
         if kind == "retracted":
             tail = f": {val}" if val else ""
             return Finding("⑪ falsifiability", "FAIL",
                            f"Claim '{claim_id}' is RETRACTED (sealed){tail}. "
                            "Resolved as withdrawn / falsified.")
         if kind == "acc":
-            reported_acc, note = val, "  ← auto-recovered from sealed am_record"
+            reported_acc = val
+            if how in ("attributed", "named-key"):
+                note = ("  ← auto-recovered from sealed am_record "
+                        f"(value recorded for metric '{sealed_metric}')")
+            elif sealed_metric:
+                note = ("  ← auto-recovered from sealed am_record (number carries "
+                        f"no metric name — assumed to be '{sealed_metric}')")
+            else:
+                note = "  ← auto-recovered from sealed am_record"
         elif kind == "verdict":
             vu = val.upper()
             if vu.startswith(_NEG_VERDICTS):
+                # Trusting a self-reported death is safe against inflation; the
+                # claim is resolved-negative either way. But say plainly that the
+                # sealed threshold itself was never machine-checked, so audits can
+                # count "died by its own criterion" apart from "died, label only".
                 return Finding("⑪ falsifiability", "FAIL",
                                f"Sealed verdict for '{claim_id}' = {val} → falsified "
-                               "(per am_record(target)).")
+                               "(per am_record(target)). The resolution carries no "
+                               "gradable number — the claim died by its label; whether "
+                               "it died by its own sealed threshold cannot be "
+                               "machine-checked. Record the deciding number as "
+                               "{'metric','value'} in the resolving am_record.")
             if vu.startswith(_POS_VERDICTS):
-                return Finding("⑪ falsifiability", "OK",
-                               f"Sealed verdict for '{claim_id}' = {val} → not falsified "
-                               "(per am_record(target)).")
+                # Trusting a self-reported survival is exactly how inflation
+                # happens. A PASS nothing can re-check is not an OK.
+                return Finding("⑪ falsifiability", "WARN",
+                               f"Sealed verdict for '{claim_id}' = {val}, but the "
+                               "resolution carries no gradable number — 'not falsified' "
+                               "rests on the label alone; the sealed kill_threshold was "
+                               "never checked against a measurement. Record the deciding "
+                               "number as {'metric','value'} in the resolving "
+                               "am_record(target).")
             # unknown verdict label → fall through to the standard (WARN) path
 
     f = _falsifiability_eval(pre, reported_acc)

@@ -158,7 +158,10 @@ def test_healthy_seal_has_no_warn_or_fail():
     pre = {"claim_id": "good", "metric": "separation_d", "min_n": 240,
            "baseline": 0.5, "pass_threshold": 0.6,
            "kill_threshold": {"metric": "d", "threshold": 0.1, "direction": "below"},
-           "pre_seal_checks": ["reachability-smoke", "mass-balance-audit"]}
+           # ⑫h: a healthy seal records what its checks returned. Bare names are
+           # still accepted, they just no longer read as clean.
+           "pre_seal_checks": [{"name": "reachability-smoke", "result": "unreachable"},
+                               {"name": "mass-balance-audit", "result": "balanced"}]}
     assert not [f for f in mm._preseal_lint(pre) if f.level in ("WARN", "FAIL")]
 
 
@@ -169,8 +172,10 @@ def test_preregister_persists_pre_seal_checks_and_lint_reads_them(tmp_path):
                        pass_threshold=0.6,
                        kill_threshold={"metric": "acc", "threshold": 0.55,
                                        "direction": "below"},
-                       pre_seal_checks=["reachability-smoke"])
-    assert e["pre_seal_checks"] == ["reachability-smoke"]
+                       pre_seal_checks=[{"name": "reachability-smoke",
+                                         "result": "unreachable"}])
+    assert e["pre_seal_checks"] == [{"name": "reachability-smoke",
+                                     "result": "unreachable"}]
     fs = mm.prereg_lint(led, "c")
     assert not [f for f in fs if f.level in ("WARN", "FAIL")]
 

@@ -91,12 +91,21 @@ async def list_tools() -> list[types.Tool]:
                                        "legitimizes later attribution cycles; audit surfaces them as INFO "
                                        "(SPEC amendment A2).",
                                        "default": None},
-                    "pre_seal_checks": {"type": "array", "items": {"type": "string"},
+                    "pre_seal_checks": {"type": "array",
+                                       "items": {"anyOf": [
+                                           {"type": "string"},
+                                           {"type": "object",
+                                            "properties": {"name": {"type": "string"}},
+                                            "required": ["name"]}]},
                                        "description":
                                        "Cheap machine-checks run BEFORE sealing: reachability-smoke | "
                                        "mass-balance-audit | neutral-control | manipulation-check | "
-                                       "positive-control. mm_prereg_lint (㉗) reads them back; declaring "
-                                       "none draws an INFO nudge.",
+                                       "positive-control. Each entry is a bare name, or an object "
+                                       "recording what the check returned — {'name': 'neutral-control', "
+                                       "'result': 'not_fired', 'n': 30}. A bare name declares work "
+                                       "without recording it, so mm_prereg_lint (㉗) WARNs (⑫h) and no "
+                                       "later audit can aggregate its outcome; declaring none at all "
+                                       "draws an INFO nudge.",
                                        "default": None},
                 },
                 "required": ["ledger_path", "claim_id", "metric"],

@@ -28,6 +28,7 @@ from .mm import (
     # helpers
     wilson_ci, lookup_baseline, lookup_reproduction, record_reproduction,
     catch_history, report, Finding, recover_resolution,
+    declared_pre_seal_checks,
 )
 
 __all__ = [
@@ -45,5 +46,6 @@ __all__ = [
     "ranking_stability_check",
     "wilson_ci", "lookup_baseline", "lookup_reproduction", "record_reproduction",
     "catch_history", "report", "Finding", "recover_resolution",
+    "declared_pre_seal_checks",
 ]
-__version__ = "0.36.0"
+__version__ = "0.37.0"

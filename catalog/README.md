@@ -104,8 +104,11 @@
 
 봉인: 결함 기록 `dfccb26a…` · 수리 팔 `7c51d936…`→`c4b4ce03…` · 6칸 팔 `72e5a492…`→`9fa87937…` ·
 대조 `adf6a7f6…`→`e09d1f8c…` · **재현 `cf8fedb2…`→`76e2f5de…`**. 앵커 10/10 ·
-`stack_verify_all` ALL OK 17/17 — ⚠️단 그 17/17 은 `stack.json` 에 **이름이 있는 원장 5개**만 덮는다
-(같은 디렉토리에 범위 밖 판정 993건이 있다). "ALL OK" 를 전체 커버리지로 읽지 말 것.
+`stack_verify_all` ALL OK 17/17 — ⚠️단 그 17/17 은 `stack.json` 에 **이름이 선언된 원장 4개**
+(`compute_governor` · `yeoul_gate_observation` · `seara` · `provenance`)만 덮는다. 같은 디렉토리에
+`.jsonl` 이 **82개** 있고, 그중 **78개가 선언 밖**이며 거기 **판정 993건**(전체 판정의 **27.7%**)이
+산다. `stack.json` 은 2026-08-06 이후 안 바뀌었으므로 **그 뒤 생긴 원장은 구조적으로 전부 검증 밖**이다.
+"ALL OK" 를 전체 커버리지로 읽지 말 것 — 그것은 *"선언된 것만 성했다"* 는 뜻이다.
 표본: [self-catch/silent-cap-truncates-the-stimulus](self-catch/silent-cap-truncates-the-stimulus.md).
 
 ## 항목 스키마 (1항목 = 1파일)

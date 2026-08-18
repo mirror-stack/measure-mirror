@@ -81,10 +81,19 @@ def main():
         print(f"{WARN} [L2 witness] (skipped) — no witness ledger configured; stack degrades to "
               "measure-mirror self-verify (case-study witness ledger is private, see honesty box)")
 
-    n_ok = sum(results)
-    verdict = "ALL OK" if n_ok == len(results) else "FAILURES PRESENT"
-    print(f"=== verdict: {verdict} ({n_ok}/{len(results)}) ===")
-    raise SystemExit(0 if n_ok == len(results) else 1)
+    n_ok, total = sum(results), len(results)
+    if not total:
+        # A config that declares nothing must NOT read as a pass. `n_ok == len(results)`
+        # is 0 == 0 on an empty run, so the old line printed ALL OK (0/0) and exited 0 —
+        # a *vacuous pass*: true only because there was nothing to falsify it. Callers
+        # chaining on `&&`, and humans reading the verdict line, could not see it.
+        print(f"=== verdict: NOTHING VERIFIED (0/0) — no ledger was checked ===")
+        print(f"    the config declares no ledger this orchestrator can read; "
+              f"a green verdict here would certify nothing.")
+        raise SystemExit(2)
+    verdict = "ALL OK" if n_ok == total else "FAILURES PRESENT"
+    print(f"=== verdict: {verdict} ({n_ok}/{total}) ===")
+    raise SystemExit(0 if n_ok == total else 1)
 
 
 if __name__ == "__main__":

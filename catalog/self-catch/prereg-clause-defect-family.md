@@ -2,6 +2,7 @@
 
 > A family of preregistration wording defects — unreachable clause, information-destroying tie-break, prediction mispositioned as anchor, ambiguous judgment unit — each detonating only at verdict time; three consecutive arcs paid with lost verdicts.
 
+- **오류유형**: `prereg-defect` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 봉인된 prereg의 특정 절이 판정 시점에야 문제로 드러남 — ①절이 논리적으로 도달 불능(기준이 이미 참/거짓 고정) ②동률·퇴화 케이스 규칙이 판정 정보를 폐기 ③"~하지 않을 것"이라는 **예측**이 앵커(무효 트리거) **조건**에 오배치 ④판정 단위(all/any/mean·창/에피)가 미고정이라 해석 변형끼리 결론 분열. 공통 결과: 실질과 무관하게 문자 격발로 RUN-INVALID/판정 소실.
 - **기전**: prereg는 코드처럼 기계 실행되는데 리뷰는 산문처럼 한다. 결함 절은 특정 상태(동률·무발동·경계·0건)에서만 격발하므로 파일럿에서 안 드러나고, 결과를 본 뒤에는 완화가 금지(침묵수정 금지·도감 40호 boundary-grazing류 규율)라 결함 비용이 전액 **판정 소실**로 전가된다. 산문 리뷰는 "의도가 통하는가"를 보지 "모든 상태에서 절이 평가 가능한가"를 안 본다.
 - **실사례(3연속·deep-lock 캠페인 07-18~19)**: (신경망 학습 잠금현상 캠페인) ①CP 아크 — 도달불능 지표 절(z2cov F→T 요구인데 기준이 이미 True) ②TRIM 아크 — 동률 tie-break 위치 규칙이 gain 정보 폐기(스펙 결함) ③TTL 아크 2건 — R-K3 "507 무발동" 절: 성공시드의 무발동 *예측*을 앵커 *조건*으로 오배치, 실질 무손상(d 0.8260 동일·발동 3회는 오염 후보의 정당 재기각)인데 문자 격발로 H-TTL 판정 미소비(**RUN-INVALID**); 귀속 g-서명 창-단위 판정 미고정(all/any/mean 3변형이 2:1 분열). 사후 처리: 정정 재판정에서 앵커=성과 유지+junk 오발동 0으로 재배치·g-서명은 사후 개봉이므로 **최엄격(all) 고정**(유리 변형 선택 금지)→B3 문구강등·"관찰-확정" 수위로만 발화. 출처: 원장 seara.jsonl — TTL prereg 7a9bbd6a31371d2b → RUN-INVALID **0ef8c233cbe5f241** → 정정 74b688c7d07f013c·DEEPLOCK_TTL_RESULTS.md §🪞·db/curated/self_catches.jsonl(prereg_clause_defects_20260719).

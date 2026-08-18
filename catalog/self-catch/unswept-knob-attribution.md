@@ -2,6 +2,7 @@
 
 > A ceiling was attributed to a capacity knob that was never swept; the confirm-sweep found the ceiling knob-invariant.
 
+- **오류유형**: `attribution` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: "벽/천장/원인 = 노브 X" 귀속 주장인데 X를 실제로 스윕(≥3레벨)한 적이 없음. 근거가 "정적 추정치와 결과의 수치 근접"(예: solo 용량 추정 ~12 ≈ 천장 13-16)뿐. 후속 아크가 그 귀속 위에 설계되기 시작함.
 - **기전**: 한 지점(single operating point)에서 두 수치가 비슷하면 인과 귀속이 공짜로 따라온다. 스윕 없이는 "X가 벽"과 "X와 무관하게 그 근방에서 다른 것이 포화"를 구별 불가. 봉인된 판정(포화=BOUNDED)은 유효해도, 판정문에 얹힌 귀속 gloss는 미검 주장으로 함께 봉인돼 다음 아크의 전제로 상속된다.
 - **실사례**: (신경망 조합 일반화 스케일링 아크) compose 아크 종결 결론 "새 벽=단일개체 용량~12를 보호+선택이 ~13-16까지 확장 후 포화"(32b37b33·090d3b19의 해석 gloss) — HIDDEN 스윕 없이 귀속. 확인 스윕 capsweep(prereg d08f297d→판정 5224d2e0): HIDDEN 4배(5→20)에 solo·protected 천장 둘 다 flat(pearson 0.105) = 귀속 미지지. 이어 wallid(6a1ea40c→8f61853b): 훈련예산 16×도 벽 아님(오히려 하락). 귀속 위에 설계된 후속 molting(growing-capacity) 아크를 착수 전 KILL — 확인 스윕이 대형 아크 헛돌기를 선방지. 출처: db/curated/self_catches.jsonl — compose_capsweep_20260703, 원장 river_engine_ignition.jsonl.

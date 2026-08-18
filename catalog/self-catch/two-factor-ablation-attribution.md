@@ -2,6 +2,7 @@
 
 > An ablation arm silently removed two factors at once; the effect was credited to the headline factor.
 
+- **오류유형**: `attribution` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 절제(control/drift/ablation) arm이 명목상 요소 X(예: 선택)를 제거했다며 "X가 효과의 동력"으로 귀속하는데, 그 arm의 구현을 보면 X 외에 Y(예: 환경 래칫/체인연장)도 함께 꺼져 있음. 절제 arm의 효과=0이 "구조적으로 0일 수밖에 없는" 설계.
 - **기전**: control 구현의 편의(negative arm엔 래칫도 굳이 안 돌림)가 절제 변수를 2개로 만든다. 결과가 X 제거로 죽으면 X 귀속이 자연스러워 보이지만, 실제로는 Y 제거만으로도 죽는 설계였다면 X의 기여는 미측정. 봉인 판정의 kill-condition은 그 정의된 control로 충족되므로 판정 자체는 살고, **귀속 gloss만 오염**되어 후속 설계에 상속된다.
 - **실사례**: compose 엔진 sealed GO(dbc74ca6)의 gloss "축적은 선택구동(무선택 drift=1 근거)" — drift arm은 선택 제거 + **체인연장 금지**를 동시 적용(연장은 control!="negative" 조건). molting 설계 스모크에서 연장 허용 무선택 arm이 cap까지 축적하는 것을 자가적발 → 정식 prereg(a526a55e) paired 검정: FIXED8 18.2 vs 무선택 16.6, paired_delta mean 1.6 ≤ 2 = **KILL**. 진짜 동력=크라우딩 차단(보호)×지속 SGD 훈련, 선택 기여 ~+1.6. gloss amendment(4bdd520318e11441), sealed GO 자체 불침해(crowded=1로 보호 필요성은 성립). 출처: db/curated/self_catches.jsonl — compose_q2_20260703.

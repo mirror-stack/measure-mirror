@@ -2,6 +2,7 @@
 
 > Reading a threshold's *provenance* off its *value*: because an honest convention and a data-derived number can be the identical number, no function of the value alone can tell them apart.
 
+- **오류유형**: ⚠️**미정(이견)** — 코더A `gaming` / 코더B `instrument-misfire`. 두 독립 코더가 갈렸다. 어느 쪽으로도 확정하지 않는다.
 - **증상(시그니처)**: `pass_threshold`·`baseline` 같은 봉인된 스칼라가 평가 데이터의 통계(평균·중앙값·분위수)와 일치하는 것을 보고 "이 문턱은 데이터를 보고 정했다(자기참조 캘리브·double-dipping)"고 코드로 판정하려는 충동. 값 하나로 출처를 역추론하려 함.
 - **기전**: 판별하려는 비트 — "이 값이 *이 데이터의 함수*인가" — 는 값을 만든 **생성 과정(process)의 속성**이지 값 자체에 없다. 봉인된 스칼라는 many-to-one collapse라 그 비트를 버린다. 정직-우연 세계(관례로 0.95를 골랐는데 데이터 p95도 우연히 0.95)와 부정직-유도 세계(데이터 p95=0.95를 읽어 0.95로 설정)는 탐지기 `D(값, 데이터)`에 **같은 바이트를 입력**한다 → 같은 출력 → 두 세계를 가르는 ROC = 우연(chance) by construction. 게이밍도 비대칭: 정직한 자는 우연 일치를 숨길 수 없어 FP가 높게 고정되고, 부정직한 자는 `0.5473→0.55` 반올림이나 held-out 슬라이스 유도로 흔적을 지워 TP→0. FP ≥ TP.
 - **실사례**: (측정거울 프로브 설계 아크) 여울 `threshold-provenance-detect` 아크(2026-07-09) — measure-mirror에 "임계값이 데이터 유도됐는지 실측 탐지"하는 프로브 A(㉖)를 넣으려다, NACC 3역할(분석·구현·재현)×2라운드 교차검증이 위 collapse로 **KILL 수렴**. 결정 케이스: 정직한 신뢰수준 관례 `0.95`가 데이터 p95와 일치(clean)하는데, 데이터에서 p95=0.95를 읽어 설정한 것(defective)과 **완전히 같은 0.95** → 값 계층 분리 불가. 구현 역할은 자기 라운드1 "실측 프로브 GO"를 절반 철회("disclosure ≠ detection"). 출처: yeoul arc `20260709_145857_threshold-provenance-detect`(설계/arcs/_archive), nacc-close am seal `1c6a66a26fae506f`(content-hash `5baa90f61faa05c3`).

@@ -2,6 +2,7 @@
 
 > A conditional metric (precision) was reported with the full-population n instead of the conditioning denominator; GRIM caught the impossible ratio.
 
+- **오류유형**: `instrument-misfire` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: precision/recall/조건부 정확도류 지표를 검증에 넘길 때 n이 "전체 사례 수"로 들어감. GRIM이 "산술적으로 불가능한 값" FAIL을 냄(어떤 정수 k도 round(k/n)이 보고값과 불일치).
 - **기전**: 조건부 지표의 분모는 조건을 만족한 부분집합(발화 건수·검출 건수 등)인데, 보고자는 습관적으로 실험 전체 n을 붙인다. 값 자체는 정직해도 (지표, n) 쌍이 거짓이 되어 CI·GRIM·검정력 판단이 전부 틀어진다.
 - **실사례**: (음성 발화 정밀도 측정 실험) 너울 실Vault 게이트 v2(2026-07-03) — spoken_precision 0.9846(분모=발화 3255)·0.9967(분모=발화 3973)을 n=전체쿼리 6600으로 mm_verify에 보고 → GRIM ⑩ FAIL("no integer k satisfies round(k/6600,4)=0.9846") → 발화건수로 교정 재검증. 출처: db/curated/self_catches.jsonl — neoul_vault_real_v2_20260703, seals be3891607ddfe64b·2d8a006028148771·70147dc579556cfa·7c43e0ad5d85f89b

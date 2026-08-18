@@ -2,6 +2,7 @@
 
 > A sign error inflating a generativity metric, caught by the mirror before shipping.
 
+- **오류유형**: ⚠️**미정(이견)** — 코더A `instrument-misfire` / 코더B `gaming`. 두 독립 코더가 갈렸다. 어느 쪽으로도 확정하지 않는다.
 - **증상(시그니처)**: 생성성 지표가 예상외로 좋게 나옴. 측정거울 자가검사에서 부호(sign) 버그 발견.
 - **기전**: 지표 계산의 부호가 뒤집히면 나쁜 결과가 좋게, 또는 그 반대로 보인다. 코드 버그가 지표를 해킹하는 형태로, "너무 좋음"을 sanity 게이트로 걸러내지 않으면 통과한다.
 - **실사례**: latent_oee 51_ 생성성에서 부호버그를 측정거울 자가적발 + 정정. 사전등록 metric-sanity 게이트로 해킹 차단. 출처: db/curated/self_catches.jsonl — chrysalis_latent_oee_pivot

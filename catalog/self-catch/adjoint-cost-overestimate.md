@@ -2,6 +2,7 @@
 
 > A false negative caused by overestimating a method's own cost, self-corrected to a pass.
 
+- **오류유형**: `fn-guard` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 픽셀 F1이 거짓음성으로 나옴. 원인이 데이터가 아니라 자기 구현이 Adjoint 비용을 과대평가한 결함이었음.
 - **기전**: 방법 자체의 비용/복잡도를 잘못 크게 잡으면 실현 가능한 것을 불가능(음성)으로 오판한다. 음성이 대상의 한계가 아니라 구현 결함에서 온 것 — 거짓음성의 전형.
 - **실사례**: FM×CDE 픽셀 F1 거짓음성 → "Adjoint 비용을 과대평가한 자기 결함" 적발 → O(1) Adjoint불요로 자가정정, F1 PASS. 출처: db/curated/self_catches.jsonl — fm_cde_pixel_feasibility

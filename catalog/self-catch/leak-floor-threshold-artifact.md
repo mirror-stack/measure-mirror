@@ -2,6 +2,7 @@
 
 > A negative-control gate whose absolute threshold sits *below* the chance floor of a best-of-N (selection-biased) metric can never NOT fire — it flags "leak/INVALID" on every run regardless of the truth; the difference-gate it replaced would have passed cleanly.
 
+- **오류유형**: `instrument-misfire` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 중립대조(negative-control) 게이트가 판정 시점에 발화해 RUN을 INVALID 처리하는데, ①문제의 지표가 **best-of-N / 최댓값 / argmax 선택**으로 산출돼 우연에서도 바닥이 0이 아니라 양수(선택편향 floor)이고 ②게이트가 그 지표에 **절대 문턱**(예: `metric > 0.10`)을 걸었으며 ③문턱이 그 floor보다 낮다. 결과: 어떤 세계·어떤 처치든 게이트가 "누수"라고 외침. 원본 판정기가 쓰던 **차분/상대** 게이트로 되돌리면 깨끗이 통과.
 - **기전**: 누수 게이트의 목적은 "중립대조가 있어선 안 될 신호를 흘리는가"를 잡는 것. 그러려면 대조의 기대 기저(=우연 floor)를 기준으로 **초과분**을 재야 한다. 그런데 지표가 best-of-N이면 우연만으로도 값이 floor≈f>0로 부풀고, 절대 문턱 t<f를 걸면 `metric>t`는 상시 참 → 게이트가 실질과 무관하게 강제 격발. 봉인 때 원본의 **차분** 조건(`median(대조−기저) > δ`)을 **절대** 조건(`대조 > t`)으로 바꿔 쓰면 이 함정에 빠진다. 차분은 floor를 자동 상쇄하지만 절대는 floor를 무시한다.
 - **실사례**: 자생 아크④ 노출×발명 게이트0(river_engine·07-23~24). v3 봉인런이 `negative_median=0.1238 > 0.10` 게이트 발화로 **LEAK_INVALID** 판정(원장 seara.jsonl: v3 seal `76e855c1` → 판정 am `3e249da4`). 진단: `negative_mean`은 best-of-8000 R²라 선택편향 floor ~0.12 → 절대 문턱 0.10은 chance floor **아래**(닿을 수 없는 바). 진범=원본 concept_judge의 **차분** `median(d_neg=LIB.neg−NOLIB.neg)>0.05`를 봉인 때 절대 `LIB.neg>0.10`으로 오변경. 값싼 사전확인(`exposure_fb_dneg_precheck.py`·조작검증 PASS): v1 시드 median d_neg=**+0.0000**(누수 아님). 교정 차분게이트로 v4 firm 24시드 재봉인(seal `6724a3bc`)→**KILL**(fragile 0.208<0.25·am `0d2c160f`)이고 누수게이트 **dneg_median=0.0 통과** = v3 LEAK_INVALID이 진짜 오염 아닌 **문턱-형식 착시**였음을 firm에서 확증.

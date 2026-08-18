@@ -2,6 +2,7 @@
 
 > An intervention beat its baseline, but a content-scrambled version of the same intervention beat it equally — the gain was the intervention's FORM (a regularizing side-effect), not the injected CONTENT it was credited to.
 
+- **오류유형**: `attribution` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 처치 arm(예: 교사 구조를 보조손실로 주입한 distill)이 기준선(flat)을 Δ만큼 이기고 "주입한 내용이 효과의 동력"으로 귀속하려는데, **같은 처치의 내용만 무의미하게 셔플한 대조**(sanity)가 거의 같은 Δ로 기준선을 이긴다. 처치−셔플대조 ≈ 0. 겸하여 처치가 실제로 그 내용을 계산/사용한다는 직접 증거(예: held-out 내용 예측 정확도)가 자명기저 이하다.
 - **기전**: 보조과제/주입은 그 **내용과 무관한 부수효과**(표현 정규화·분산 안정화·가족-일관 코딩 압력)로 지표를 올릴 수 있다. 셔플해도 "가족마다 일관된(틀렸지만) 코드를 맞춰라"라는 형식은 살아 있어 같은 부수효과를 낸다. 기준선 대조(flat)만 두면 이 형식효과가 내용효과로 오귀속된다. 특히 기준선이 시드마다 요동(seed variance)하면, 처치의 "안정화" 부수효과가 평균 Δ를 부풀려 겉보기 회수로 보인다.
 - **실사례**: 재귀 daylight 아크 하이브리드 게이트(자생 레인). H1=syslib가 채굴한 명시 구조지문(90d)을 훈련 보조손실로 주입하면 flat 백본이 held-out 재귀 채널을 회수(=증류). prereg seal `96f3d57b`(kill=distill−flat win<2)·1차지표 오설계(distill−flat: 형식+내용 혼재). 결과: distill +0.096(win 2/3)로 겉보기 통과였으나 **사전등록 sanity 대조(지문 셔플)가 +0.089(win 2/3)** → sanity_ok=false로 verdict INVALID. 교락 제거한 정직 대조 **distill−sanity=+0.007≈0**·flat 시드요동(0.49/0.51/0.76)을 보조과제가 ~0.65–0.74로 안정화한 것뿐·**held-out 지문 exact-match=0.0 전 시드**(bitacc 0.79 < all-zero 자명기저 0.822 — 아예 계산 못 함). 실질 판정=구조 증류 전무(DISTILL_NO), 아크 반복소견(기울기=가족특이 암기·전이0)과 정합. 출처: recursion_daylight_poc/gate3_hybrid.py(SHA ff968ea7) · prereg `96f3d57b`(mm_reason_ledger.jsonl) · 결과 am seal `ac54070f`(seara.jsonl) · stack ALL OK.

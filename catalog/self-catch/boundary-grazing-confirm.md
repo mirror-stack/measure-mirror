@@ -3,6 +3,7 @@
 > A CONFIRM whose every pre-registered criterion passes with exactly zero margin — the
 > signature of a noise-level effect grazing the thresholds, not a real one clearing them.
 
+- **오류유형**: `gaming` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 사전등록된 판정 기준 2개 이상이 전부 **여유 0으로 정확히 문턱값에서** 통과
   (차이=마진 그대로, 허용 역전=상한 그대로, 앵커=하한 그대로). 점추정만 보면 "전 기준 통과"로 읽힘.
 - **기전**: 정수/거친 지표 + 소표본에서는 노이즈 수준 효과도 문턱을 스칠 확률이 상당하다.

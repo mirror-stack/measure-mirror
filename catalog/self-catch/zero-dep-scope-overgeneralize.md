@@ -2,6 +2,7 @@
 
 > A self-audit caught the tool's own README overclaiming its scope and dependencies.
 
+- **오류유형**: ⚠️**미정(이견)** — 코더A `attribution` / 코더B `gaming`. 두 독립 코더가 갈렸다. 어느 쪽으로도 확정하지 않는다.
 - **증상(시그니처)**: "zero dependencies" + "audits all AI eval claims" 같은 전방위 주장. scope 검사에서 과대일반화로 FAIL.
 - **기전**: 도구의 실제 커버리지(분류/회귀/판정/순위 한정)와 광고 범위("all")가 불일치. 게다가 선택 의존(judge.py의 openai/anthropic 옵션)을 "zero-dep"으로 뭉뚱그리면 검증범위를 초과 주장한다.
 - **실사례**: 측정거울 자기측정 ⑥ scope — mm_scope_check가 과대일반화 FAIL(judge.py는 openai/anthropic 옵션의존, 커버는 분류/회귀/판정/순위 한정) → README를 "Zero-dep core; judge optional"로 정직화. 출처: db/curated/self_catches.jsonl — measure_mirror_self_audit_20260612

@@ -4,6 +4,7 @@
 > task allows. A smaller, pre-routed summary of the SAME information can beat it — and
 > every closure/headroom ratio normalized by that ceiling is silently overstated.
 
+- **오류유형**: `gaming` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**
   - 양성대조(오라클/천장) 팔보다 **더 높은 점수를 내는 팔**이 나중에 등장한다.
   - 그 팔이 준 정보가 천장 팔이 가진 정보의 **부분집합 또는 요약**이다(정보가 더 많지 않다).

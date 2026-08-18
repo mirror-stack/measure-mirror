@@ -2,6 +2,7 @@
 
 > A negative conclusion phrased as "never" when only our own cases/theory were tested.
 
+- **오류유형**: `fn-guard` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 음성 결론을 "shared db never works"처럼 절대화. 검증한 각도가 미등록이고 결론범위(never)가 검증범위를 초과.
 - **기전**: 음성을 "언제나/절대"로 확장하면, 실제로 본 몇몇 사례·이론·코드보다 훨씬 넓게 주장하게 된다. 반증 시도한 각도를 명시하지 않으면 범위 초과를 스스로 못 본다.
 - **실사례**: 측정거울 자기측정 ⑬ — mm_negative_audit이 FAIL(각도 미등록 + 결론범위 never가 검증범위 우리 사례·이론·코드 초과) → README를 "우리 맥락 인센티브 불일치"로 약화. 출처: db/curated/self_catches.jsonl — measure_mirror_self_audit_20260612

@@ -2,6 +2,7 @@
 
 > A null-model proxy measured outside the treatment's binding constraint returns a degenerate rate (all-pass/all-fail), silently gutting the guard it was built for.
 
+- **오류유형**: ⚠️**미정(이견)** — 코더A `fn-guard` / 코더B `gaming`. 두 독립 코더가 갈렸다. 어느 쪽으로도 확정하지 않는다.
 - **증상(시그니처)**: 복권/우연 통제용 널 확률을 프록시 절차로 실측했더니 전 표본이 같은 극단값(p=1.0 또는 0.0). 특히 "처치가 실제로 작동하는 맥락"(런 내 동역학, 온라인 상태)과 다른 맥락(정지 상태 solo-fit, 오프라인 재적합)에서 측정했을 때.
 - **기전**: 처치 효과를 결박하는 진짜 제약(여기선 보호래칫의 선택동역학 churn)이 프록시 절차에서 제거됨 — 프록시는 "제약 없는 세계"의 풀림확률을 재므로 뭐든 풀리고, 널은 변별력 0이 된다. 널이 약해지는 방향이면 게이트가 공짜 통과(위양성 편향), 강해지는 방향이면 도달불능(위음성 편향) — 어느 쪽으로 기우는지조차 프록시만 봐선 모른다.
 - **실사례**: (한 신경망 재학습 '복권' 실험) 갱신(renewal) 아크 G3 복권 널 — warm-refit solo 풀림확률이 12/12 seed서 p_unlock=1.000(200/200, cold 50draw도 1.0). "너무 좋다" 의심 → 음성대조(원래 stuck 링크 재적합) 추가했더니 그것도 35/36 풀림(p_original≈1.0) = 프록시 무효 판명. in-run은 같은 링크서 600~1700r 정체(R² 0.12~0.52). 부산물로 기전 발견: 래칫 벽=링크 내용이 아닌 선택동역학. (출처: db/curated/self_catches.jsonl 해당 라인 · open-coupling-engine renewal 아크 · am seal 682489b33ed57cbe, prereg ab0beab45bac7236, 철회 669553aa6762b5e4)

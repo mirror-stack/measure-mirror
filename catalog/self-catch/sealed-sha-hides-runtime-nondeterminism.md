@@ -2,6 +2,7 @@
 
 > A pinned protocol hash freezes the source *text*, not the *execution*: an unrecorded runtime nondeterminism (e.g. Python's per-process string `hash()`) can make the sealed run unreproducible while every integrity check still says OK.
 
+- **오류유형**: `prereg-defect` — 독립 이중코딩 합치(2026-08-18)
 - **증상(시그니처)**: 봉인에 프로토콜 파일 SHA256이 박혀 있고 체인 검증도 ALL OK인데, 같은 코드·같은 데이터로 다시 돌리면 **중간 산출물이 비트 단위로 달라진다**. 특히 `hash(...)`, 집합/딕셔너리 순회 순서, 스레드 수, cuDNN 자동튜닝처럼 **소스에 안 적히는 상태**로 시드를 만드는 자리. "SHA가 같으니 재현 가능"이라는 문장이 검증 없이 통과되고 있으면 의심.
 - **기전**: 봉인이 고정하는 비트는 *파일 내용*이다. 실행 결과가 파일 내용의 함수가 아니면(환경변수·프로세스 난수·하드웨어 비결정성이 끼면) 해시는 재현성을 증언하지 못한다. 파이썬 문자열 `hash()`는 `PYTHONHASHSEED` 미설정 시 프로세스마다 randomize된다 — 소스는 결정적으로 보이는데(`torch.manual_seed(hash(name) % 10000)`) 실제 시드는 매 실행 다르다. 무해해 보이는 이유는 **한 런 안에서는 일관**되기 때문이다: 처치·대조 양팔이 같은 값을 쓰므로 그 런의 비교는 오염되지 않는다. 그래서 게이트도 통과하고 결과도 맞다 — 잃은 것은 오직 *재실행 재현성*이고, 잃었다는 사실 자체가 보이지 않는다.
 - **실사례**: (FM×CDE 후속 아크, 2026-07-30~31) `80_build_cache.py`·`83_build_cache_eye.py`가 종별 관측 판독 시드를 `abs(hash(name)) % 10000`으로 잡았다. 실측: 두 프로세스에서 `hash('s3')` → **1634 / 6269**. 따라서 봉인 런 `ac79717e`→`712f8c8a`(전이 KILL)와 `20c59a04`→`7505214b`(눈 교체 PASS 3/5)의 E2 판독행렬 W는 **재실행으로 복원되지 않는다**. 무대 v3 재실행(`1c646cbe`→am `db9abfb9`)을 준비하며 "옛 s3를 새 파이프라인으로 재생성해 기존 캐시와 비트동일" 가드를 짜다가, φ와 눈 576d는 `torch.equal=True`인데 판독 시드만 재현 불가라는 점을 발견해 자가적발했다. 처방 = `sha256(name)[:8] % 10000` 결정적 시드로 교체하고 원장에 결함·영향범위를 명시(am `db9abfb9` payload `reproducibility_defect_self_caught`).

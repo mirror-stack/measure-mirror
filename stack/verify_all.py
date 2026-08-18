@@ -49,6 +49,79 @@ def am_self_verify(am_ledger, report):
            "am verify: " + (r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr.strip()))
 
 
+REQUIRED_EXCLUSION_FIELDS = ("reason", "decided_by", "decided_at", "recheck_if")
+
+
+def _as_list(v):
+    """A config slot that was a single string could only ever hold ONE ledger.
+    That is how ledgers ended up outside the scope: not by a decision, but by
+    there being no room for them. Both forms are accepted now."""
+    if not v:
+        return []
+    return list(v) if isinstance(v, (list, tuple)) else [v]
+
+
+def _recheck_fired(path, probe):
+    """Is an exclusion's own revisit-condition now true?
+
+    An exclusion with a reason is an exclusion someone CHOSE. An exclusion with a
+    machine-checkable revisit-condition is one that cannot quietly outlive its reason
+    — which is the failure this whole change is about.
+    """
+    if not probe:
+        return None
+    kind = probe.get("kind")
+    if kind == "any_line_has_key":
+        key = probe["key"]
+        for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            try:
+                if key in json.loads(line):
+                    return f"a line now has `{key}` — the reason for excluding it no longer holds"
+            except Exception:
+                continue
+        return None
+    return f"unknown recheck probe kind {kind!r} — cannot be checked, treat as unverified"
+
+
+def sweep_ledger_dir(cfg, already, report):
+    """Default-include: every ledger in the directory is in scope unless excluded ON PURPOSE.
+
+    Returns (n_found, included_names, excluded_names). Prints the denominator, because a
+    verdict without one cannot be told apart from a verdict over nothing.
+    """
+    root = cfg.get("ledger_dir")
+    if not root:
+        return 0, [], []
+    excluded = cfg.get("excluded", {}) or {}
+    found = sorted(Path(root).glob("*.jsonl"))
+    included, skipped = [], []
+    for lp in found:
+        if lp.name in already:
+            continue
+        rec = excluded.get(lp.name)
+        if rec is None:
+            generic_linkage(str(lp), lp.stem, report)
+            included.append(lp.name)
+            continue
+        missing = [f for f in REQUIRED_EXCLUSION_FIELDS if not rec.get(f)]
+        if missing:
+            # An exclusion nobody signed is the thing that started this: it has no author,
+            # so it has nobody to overturn it. Refuse to honour it silently.
+            report(FAIL, "scope", lp.name,
+                   f"excluded but the exclusion is incomplete — missing {missing}")
+            continue
+        fired = _recheck_fired(lp, rec.get("recheck_probe"))
+        if fired:
+            report(FAIL, "scope", lp.name, f"exclusion is stale: {fired} (recheck_if: {rec['recheck_if']})")
+            continue
+        skipped.append(lp.name)
+        print(f"{WARN} [scope] {lp.name}: excluded by {rec['decided_by']} on {rec['decided_at']} "
+              f"— {rec['reason']} · revisit when: {rec['recheck_if']}")
+    return len(found), included, skipped
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
@@ -66,17 +139,24 @@ def main():
     for name, path in cfg["mm_ledgers"].items():
         verify_self(path, cfg["anchor_dir"], report)
 
-    # L1 for the action/provenance ledgers (their own chains)
-    if cfg.get("am_ledger"):
-        generic_linkage(cfg["am_ledger"], "am", report)
-        am_self_verify(cfg["am_ledger"], report)
-    if cfg.get("pm_ledger"):
-        generic_linkage(cfg["pm_ledger"], "pm", report)
+    # L1 for the action/provenance ledgers (their own chains). Both slots accept a list.
+    am_ledgers, pm_ledgers = _as_list(cfg.get("am_ledger")), _as_list(cfg.get("pm_ledger"))
+    for i, led in enumerate(am_ledgers):
+        tag = "am" if len(am_ledgers) == 1 else f"am[{Path(led).stem}]"
+        generic_linkage(led, tag, report)
+        am_self_verify(led, report)
+    for led in pm_ledgers:
+        tag = "pm" if len(pm_ledgers) == 1 else f"pm[{Path(led).stem}]"
+        generic_linkage(led, tag, report)
+
+    # Default-include sweep: anything in the ledger dir that no one excluded on purpose.
+    covered = {Path(p).name for p in list(cfg["mm_ledgers"].values()) + am_ledgers + pm_ledgers}
+    n_found, swept, skipped = sweep_ledger_dir(cfg, covered, report)
 
     # L2 cross-witness — the check only the stack can do (needs `am`)
-    if cfg.get("am_ledger"):
+    if am_ledgers:
         for name, path in cfg["mm_ledgers"].items():
-            cross_witness(cfg["am_ledger"], name, path, report)
+            cross_witness(am_ledgers[0], name, path, report)
     else:
         print(f"{WARN} [L2 witness] (skipped) — no witness ledger configured; stack degrades to "
               "measure-mirror self-verify (case-study witness ledger is private, see honesty box)")
@@ -91,6 +171,11 @@ def main():
         print(f"    the config declares no ledger this orchestrator can read; "
               f"a green verdict here would certify nothing.")
         raise SystemExit(2)
+    if cfg.get("ledger_dir"):
+        # State the denominator next to the verdict. "ALL OK" over a scope nobody printed
+        # is how 78 of 82 ledgers stayed unverified for twelve days without anyone noticing.
+        print(f"--- scope: {n_found} ledger(s) in {cfg['ledger_dir']} · "
+              f"{len(covered)} declared · {len(swept)} auto-included · {len(skipped)} excluded ---")
     verdict = "ALL OK" if n_ok == total else "FAILURES PRESENT"
     print(f"=== verdict: {verdict} ({n_ok}/{total}) ===")
     raise SystemExit(0 if n_ok == total else 1)

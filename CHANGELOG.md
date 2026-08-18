@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.39.0] — 2026-08-19
+
+### Changed
+- **Verification scope is now default-include.** `stack.json` named four ledgers while
+  **78 others sat in the same directory unverified**. The cause was not a judgement
+  call: `am_ledger` / `pm_ledger` were **single string slots**, so there was no room
+  for more — the ledgers were not excluded, they simply had nowhere to go. Nobody
+  chose it, so nobody had it to reverse, and the scope did not move for twelve days.
+
+  `verify_all.py` now takes `ledger_dir` and verifies **every** `*.jsonl` under it
+  unless an entry in `excluded` says otherwise. An exclusion must carry `reason`,
+  `decided_by`, `decided_at` and `recheck_if`; one missing a field is **refused, not
+  honoured** — an exclusion nobody signed is the failure this change exists to prevent.
+  An optional `recheck_probe` makes the revisit-condition machine-checkable, so an
+  exclusion cannot quietly outlive its own reason (a stale one now FAILs).
+
+  `am_ledger` / `pm_ledger` accept a list as well as a string.
+
+### Added
+- **The verdict line now states its denominator** — `scope: N ledger(s) · D declared ·
+  A auto-included · E excluded`. `ALL OK` over an unstated scope is how the gap stayed
+  invisible: the number was true and the thing it covered was never written down.
+
+---
+
 ## [0.38.1] — 2026-08-19
 
 ### Fixed

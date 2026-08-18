@@ -23,6 +23,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
   `am_ledger` / `pm_ledger` accept a list as well as a string.
 
+### Fixed
+- **An uninstalled `am` CLI crashed the orchestrator instead of degrading.** The module
+  contract says L2 is "skipped and reported as such" without `am`, but
+  `subprocess.run(["am", ...])` raised `FileNotFoundError` and took the whole run down
+  with a traceback. The documented fallback therefore only held on machines that
+  happened to have the CLI. Skipped layers are now printed and never counted as passes.
+  (Surfaced by the new list-valued `am_ledger` test — the first to exercise that path
+  where `am` is absent.)
+
 ### Added
 - **The verdict line now states its denominator** — `scope: N ledger(s) · D declared ·
   A auto-included · E excluded`. `ALL OK` over an unstated scope is how the gap stayed

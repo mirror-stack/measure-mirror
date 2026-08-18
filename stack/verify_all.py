@@ -33,17 +33,38 @@ DEFAULT_CONFIG = {
 }
 
 
+def _am(args):
+    """Run the `am` CLI, or report that it is absent instead of dying.
+
+    The module contract says an uninstalled `am` degrades the stack to measure-mirror's
+    own self-verification. It did not: `subprocess.run(["am", ...])` raised
+    FileNotFoundError and took the whole orchestrator down with a traceback — a promise
+    of graceful degradation that only held where the tool happened to be installed.
+    """
+    try:
+        return subprocess.run(args, capture_output=True, text=True)
+    except FileNotFoundError:
+        return None
+
+
 def cross_witness(am_ledger, peer_name, peer_path, report):
-    r = subprocess.run(["am", "--ledger", am_ledger, "verify-peer",
-                        "--name", peer_name, peer_path],
-                       capture_output=True, text=True)
+    r = _am(["am", "--ledger", am_ledger, "verify-peer", "--name", peer_name, peer_path])
+    if r is None:
+        # Skipped, not passed: printed (so it is visible) but never counted as an OK.
+        print(f"{WARN} [L2 witness] {peer_name}: skipped — the `am` CLI is not installed; "
+              f"this run says nothing about the cross-witness layer")
+        return
     out = (r.stdout or r.stderr).strip().replace("\n", " | ")
     ok = r.returncode == 0 and ("OK" in out or "✅" in out or "consistent" in out.lower())
     report(OK if ok else FAIL, "L2 witness", peer_name, out)
 
 
 def am_self_verify(am_ledger, report):
-    r = subprocess.run(["am", "--ledger", am_ledger, "verify"], capture_output=True, text=True)
+    r = _am(["am", "--ledger", am_ledger, "verify"])
+    if r is None:
+        print(f"{WARN} [L1 chain] am: `am verify` skipped — the `am` CLI is not installed "
+              f"(the format-agnostic linkage check above still ran)")
+        return
     ok = r.returncode == 0 and "OK" in r.stdout
     report(OK if ok else FAIL, "L1 chain", "am",
            "am verify: " + (r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr.strip()))

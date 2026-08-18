@@ -97,3 +97,27 @@ def test_am_ledger_accepts_a_list(tmp_path):
     r = _run(cfg)
     # Both slots were read: each gets its own tagged linkage line.
     assert "am[am1]" in r.stdout and "am[am2]" in r.stdout, r.stdout
+
+
+def test_missing_am_cli_degrades_instead_of_crashing(tmp_path):
+    """The module contract promises degradation when `am` is absent. It used to crash.
+
+    `subprocess.run(["am", ...])` raised FileNotFoundError and took the orchestrator down
+    with a traceback, so the documented fallback only held on machines that happened to
+    have the CLI installed. A skipped layer is printed but never counted as an OK.
+    """
+    import os
+    led = tmp_path / "led"
+    led.mkdir()
+    (led / "am1.jsonl").write_text('{"prev_seal":"genesis","seal":"a"}\n', encoding="utf-8")
+    anchors = tmp_path / "anchors"
+    anchors.mkdir()
+    cfg = tmp_path / "c.json"
+    cfg.write_text(json.dumps({"mm_ledgers": {}, "anchor_dir": str(anchors),
+                               "am_ledger": str(led / "am1.jsonl")}), encoding="utf-8")
+    env = dict(os.environ, PATH=str(tmp_path / "no-such-bin"))   # `am` unreachable
+    r = subprocess.run([sys.executable, str(STACK / "verify_all.py"), "--config", str(cfg)],
+                       capture_output=True, text=True, env=env)
+    assert "Traceback" not in r.stderr, r.stderr
+    assert "not installed" in r.stdout
+    assert "verdict:" in r.stdout, "it must still reach a verdict, not die on the way"

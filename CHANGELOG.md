@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.38.1] — 2026-08-19
+
+### Fixed
+- **A stack verification that checked nothing reported `ALL OK`.** The verdict
+  line was `"ALL OK" if n_ok == len(results)`, which on an empty run is
+  `0 == 0`: `stack/verify_all.py` printed `=== verdict: ALL OK (0/0) ===` and
+  **exited 0** for a config declaring no ledger. This is a *vacuous pass* — the
+  verdict was true only because nothing existed to falsify it, the failure mode
+  `vacuity detection` has named in formal verification since 1997 ("every
+  request is eventually granted" is true of a model where no request is ever
+  made).
+
+  It matters because this verdict is a speech gate: it is the check run before
+  stating a measured number, and callers chain on its exit code. A partial
+  honesty signal did exist (the skipped L2 layer printed `⚠️`), but the two
+  things automation and readers actually act on — the verdict line and the exit
+  status — both said pass.
+
+  Both verifiers now separate "everything passed" from "nothing was measured",
+  and exit `2` in the latter case. `stack/verify_self.py` was not reachable this
+  way from its CLI (its linkage check always reports), but carried the identical
+  shape and is now guarded too. Relatedly, `mm verify_chain: seals valid` now
+  prints the number of entries it checked: a green line without its denominator
+  cannot be told apart from a green line with nothing behind it.
+
+  Found by a sibling lane while running an unrelated gate, reported with a
+  reproduction. The fix is a port — the same `and total` guard already existed
+  in an internal tool; what was missing was not the mechanism but its reach.
+
+---
+
 ## [0.38.0] — 2026-08-15
 
 ### Fixed

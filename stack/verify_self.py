@@ -49,7 +49,10 @@ def mm_self_verify(path, name, report):
         if bad:
             report(FAIL, "L1 chain", name, f"mm verify_chain: {[str(f) for f in bad]}")
         else:
-            report(OK, "L1 chain", name, "mm verify_chain: seals valid")
+            # Report the DENOMINATOR, not just the colour: "seals valid" over zero entries
+            # is the same vacuous pass the verdict-line guard blocks one level up.
+            n = len(load_jsonl(path))
+            report(OK, "L1 chain", name, f"mm verify_chain: seals valid ({n} entries checked)")
     except Exception as e:
         report(WARN, "L1 chain", name, f"mm lib unavailable, linkage-only ({e})")
 
@@ -96,10 +99,16 @@ def main():
 
     print("=== verify-self (measure-mirror: L1 chain + L3 anchors) ===")
     verify_self(ledger, anchor_dir, report)
-    n_ok = sum(results)
-    verdict = "ALL OK" if n_ok == len(results) else "FAILURES PRESENT"
-    print(f"=== verdict: {verdict} ({n_ok}/{len(results)}) ===")
-    sys.exit(0 if n_ok == len(results) else 1)
+    n_ok, total = sum(results), len(results)
+    if not total:
+        # Same guard as verify_all.py. Not reachable from this CLI today (generic_linkage
+        # always reports), but the bare `n_ok == len(results)` is the shape that let a
+        # vacuous pass through one layer up — pin it here so a refactor cannot reopen it.
+        print(f"=== verdict: NOTHING VERIFIED (0/0) — no check ran ===")
+        sys.exit(2)
+    verdict = "ALL OK" if n_ok == total else "FAILURES PRESENT"
+    print(f"=== verdict: {verdict} ({n_ok}/{total}) ===")
+    sys.exit(0 if n_ok == total else 1)
 
 
 if __name__ == "__main__":

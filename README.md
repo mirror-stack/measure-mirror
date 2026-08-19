@@ -17,7 +17,7 @@ Zero training · Deterministic · Stdlib-only core (Python 3.10+; the `judge` an
 
 **[📖 Full Probe Guide →](docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
 **[📜 MIRROR-SPEC v1.1 →](docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
-**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 74 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
+**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 79 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
 
 > **🪞🔎🪪 New — Mirror Stack** ([`stack/`](stack/)): measure-mirror is the *claims* layer of a
 > three-mirror integrity stack for autonomous research agents (claims · actions · provenance,

@@ -99,11 +99,20 @@ def test_catalog_counts_match_the_tree():
     assert int(header.group(1)) == total, (
         f"catalog/README.md header says {header.group(1)}, tree has {total}")
 
-    for name in ("README.md", "README_KO.md"):
-        txt = (REPO / name).read_text(encoding="utf-8")
-        for claimed in {int(x) for x in re.findall(r'(\d+) real sealed cases', txt)}:
-            assert claimed == total, (
-                f"{name} claims {claimed} real sealed cases, tree has {total}")
+    # Only README.md carries the English phrase. README_KO.md was in this loop too,
+    # which *looked* like two-file coverage but asserted nothing on the KO pass:
+    # `findall` returned [] there, so the inner loop body never ran — a vacuous
+    # iteration counted as a check. The Korean claim has its own guard below
+    # (`test_readme_ko_catalog_count_matches_the_tree`); the danger was that a
+    # future reader would call that one redundant "because this loop covers KO"
+    # and delete it, removing the guard while the suite stayed green.
+    txt = (REPO / "README.md").read_text(encoding="utf-8")
+    claims = [int(x) for x in re.findall(r'(\d+) real sealed cases', txt)]
+    assert claims, ("README.md: 'N real sealed cases' phrase not found — did the wording "
+                    "change? An empty search must fail, not pass silently.")
+    for claimed in set(claims):
+        assert claimed == total, (
+            f"README.md claims {claimed} real sealed cases, tree has {total}")
 
 
 def test_catalog_per_category_table_matches_the_tree():

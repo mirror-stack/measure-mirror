@@ -47,26 +47,31 @@ def _am(args):
         return None
 
 
-def cross_witness(am_ledger, peer_name, peer_path, report):
+def cross_witness(am_ledger, peer_name, peer_path, report, skipped=None):
     r = _am(["am", "--ledger", am_ledger, "verify-peer", "--name", peer_name, peer_path])
     if r is None:
-        # Skipped, not passed: printed (so it is visible) but never counted as an OK.
+        # Skipped, not passed: printed (so it is visible) but never counted as an OK —
+        # and recorded, so the verdict line can say the run was only partial.
         print(f"{WARN} [L2 witness] {peer_name}: skipped — the `am` CLI is not installed; "
               f"this run says nothing about the cross-witness layer")
+        if skipped is not None:
+            skipped.append(f"L2 witness/{peer_name} (the `am` CLI is not installed)")
         return
     out = (r.stdout or r.stderr).strip().replace("\n", " | ")
     ok = r.returncode == 0 and ("OK" in out or "✅" in out or "consistent" in out.lower())
     report(OK if ok else FAIL, "L2 witness", peer_name, out)
 
 
-def am_self_verify(am_ledger, report):
+def am_self_verify(am_ledger, report, tag="am", skipped=None):
     r = _am(["am", "--ledger", am_ledger, "verify"])
     if r is None:
-        print(f"{WARN} [L1 chain] am: `am verify` skipped — the `am` CLI is not installed "
+        print(f"{WARN} [L1 chain] {tag}: `am verify` skipped — the `am` CLI is not installed "
               f"(the format-agnostic linkage check above still ran)")
+        if skipped is not None:
+            skipped.append(f"L1 chain/{tag} seal-verify (the `am` CLI is not installed)")
         return
     ok = r.returncode == 0 and "OK" in r.stdout
-    report(OK if ok else FAIL, "L1 chain", "am",
+    report(OK if ok else FAIL, "L1 chain", tag,
            "am verify: " + (r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr.strip()))
 
 
@@ -146,9 +151,12 @@ def sweep_ledger_dir(cfg, already, report):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
+    ap.add_argument("--allow-partial", action="store_true",
+                    help="exit 0 even when a layer could not run (the verdict still says "
+                         "PARTIAL). For runs that knowingly lack the `am` CLI.")
     args = ap.parse_args()
     cfg = DEFAULT_CONFIG if not args.config else json.loads(Path(args.config).read_text())
-    results = []
+    results, could_not_run = [], []
 
     def report(level, layer, name, msg):
         results.append(level == OK)
@@ -161,13 +169,18 @@ def main():
         verify_self(path, cfg["anchor_dir"], report)
 
     # L1 for the action/provenance ledgers (their own chains). Both slots accept a list.
+    # The label carries the FILE, always. `am` alone named whichever ledger the config
+    # happened to declare — and a ledger literally called `am.jsonl` sat in the same
+    # directory, so three L1 lines read `am` while two of them were a different file
+    # (3,700 entries) from the third (1 entry). A failure line would have accused the
+    # wrong ledger, and an auditor grepping for the filename found nothing at all.
     am_ledgers, pm_ledgers = _as_list(cfg.get("am_ledger")), _as_list(cfg.get("pm_ledger"))
-    for i, led in enumerate(am_ledgers):
-        tag = "am" if len(am_ledgers) == 1 else f"am[{Path(led).stem}]"
+    for led in am_ledgers:
+        tag = f"am[{Path(led).name}]"
         generic_linkage(led, tag, report)
-        am_self_verify(led, report)
+        am_self_verify(led, report, tag=tag, skipped=could_not_run)
     for led in pm_ledgers:
-        tag = "pm" if len(pm_ledgers) == 1 else f"pm[{Path(led).stem}]"
+        tag = f"pm[{Path(led).name}]"
         generic_linkage(led, tag, report)
 
     # Default-include sweep: anything in the ledger dir that no one excluded on purpose.
@@ -177,10 +190,11 @@ def main():
     # L2 cross-witness — the check only the stack can do (needs `am`)
     if am_ledgers:
         for name, path in cfg["mm_ledgers"].items():
-            cross_witness(am_ledgers[0], name, path, report)
-    else:
+            cross_witness(am_ledgers[0], name, path, report, skipped=could_not_run)
+    elif cfg["mm_ledgers"]:
         print(f"{WARN} [L2 witness] (skipped) — no witness ledger configured; stack degrades to "
               "measure-mirror self-verify (case-study witness ledger is private, see honesty box)")
+        could_not_run.append("L2 witness (no witness ledger configured)")
 
     n_ok, total = sum(results), len(results)
     if not total:
@@ -195,11 +209,30 @@ def main():
     if cfg.get("ledger_dir"):
         # State the denominator next to the verdict. "ALL OK" over a scope nobody printed
         # is how 78 of 82 ledgers stayed unverified for twelve days without anyone noticing.
+        # Name the declared ones too: a count is not a set. An auditor counted unique L1
+        # labels, got a number that happened to equal the file count, and read the scope as
+        # full — while two declared ledgers were absent from it under different labels.
         print(f"--- scope: {n_found} ledger(s) in {cfg['ledger_dir']} · "
-              f"{len(covered)} declared · {len(swept)} auto-included · {len(skipped)} excluded ---")
-    verdict = "ALL OK" if n_ok == total else "FAILURES PRESENT"
+              f"{len(covered)} declared ({', '.join(sorted(covered))}) · "
+              f"{len(swept)} auto-included · {len(skipped)} excluded ---")
+
+    if n_ok != total:
+        verdict, code = "FAILURES PRESENT", 1
+    elif could_not_run:
+        # Everything that RAN passed — but a layer that was asked for never ran, so this
+        # run cannot support "the stack verifies". A green exit here is the failure this
+        # whole tool is about: what was not looked at reads as a pass.
+        verdict, code = "PARTIAL", (0 if args.allow_partial else 3)
+    else:
+        verdict, code = "ALL OK", 0
+
     print(f"=== verdict: {verdict} ({n_ok}/{total}) ===")
-    raise SystemExit(0 if n_ok == total else 1)
+    for layer in could_not_run:
+        print(f"    did not run: {layer}")
+    if could_not_run:
+        print(f"    {len(could_not_run)} layer(s) did not run — this verdict does not cover them"
+              + ("  [--allow-partial: exiting 0 anyway]" if args.allow_partial else ""))
+    raise SystemExit(code)
 
 
 if __name__ == "__main__":

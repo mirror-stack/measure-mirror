@@ -5,6 +5,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.40.0] — 2026-08-25
+
+### Changed
+- **A layer that could not run no longer reads as a pass.** `verify_all.py` already
+  refused to *count* a skipped layer as OK — it printed a `⚠️` and moved on. But the
+  verdict line was still computed as "did everything I counted pass?", so a run with the
+  `am` CLI absent skipped the seal-verify and **both** cross-witness checks and still
+  printed `ALL OK` and exited **0**. The denominator quietly shrank from 98 to 95 and
+  nothing said so. That is the exact failure this project exists to name: *what was not
+  looked at becomes a green light.*
+
+  The verdict is now **`PARTIAL`** when every check that ran passed but a requested layer
+  did not run, each missing layer is listed by name (`did not run: L2 witness/… (the
+  `am` CLI is not installed)`), and the exit code is **3** so `verify_all && publish`
+  stops. Runs that knowingly lack `am` can pass **`--allow-partial`** to exit 0 — the
+  verdict still says `PARTIAL`; the flag changes the exit code, not the truth.
+
+- **L1 labels carry the ledger's filename.** A declared ledger was labelled by its role
+  (`am`), and a ledger literally named `am.jsonl` sat in the same directory. Three L1
+  lines read `am` while two of them were a 3,700-entry file and the third had one entry
+  — a failure would have accused the wrong ledger. Declared ledgers are now
+  `am[seara.jsonl]` / `pm[provenance.jsonl]`.
+
+  Found by an auditor from another lane who grepped the output for `seara.jsonl`, got
+  zero lines, and reported it unverified. It had been verified all along, under a name
+  they had no way to guess. Their count of unique labels happened to equal the number of
+  files on disk, which made the wrong set look complete — **a count is not a set**, so
+  the scope line now also names the declared ledgers instead of only counting them.
+
+### Note
+The label change is visible in output that tooling may match on: `am[am1]` → `am[am1.jsonl]`.
+The stem was not enough — searching for the file one cares about is how this was found.
+
+---
+
 ## [0.39.0] — 2026-08-19
 
 ### Changed

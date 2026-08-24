@@ -95,8 +95,10 @@ def test_am_ledger_accepts_a_list(tmp_path):
         "am_ledger": [str(led / "am1.jsonl"), str(led / "am2.jsonl")],
     }), encoding="utf-8")
     r = _run(cfg)
-    # Both slots were read: each gets its own tagged linkage line.
-    assert "am[am1]" in r.stdout and "am[am2]" in r.stdout, r.stdout
+    # Both slots were read: each gets its own tagged linkage line, tagged by FILENAME.
+    # The stem is not enough — an auditor searching the output for the ledger they care
+    # about types `am1.jsonl`, and `am[am1]` does not contain that string.
+    assert "am[am1.jsonl]" in r.stdout and "am[am2.jsonl]" in r.stdout, r.stdout
 
 
 def test_missing_am_cli_degrades_instead_of_crashing(tmp_path):

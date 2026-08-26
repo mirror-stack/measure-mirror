@@ -111,11 +111,50 @@ def _recheck_fired(path, probe):
     return f"unknown recheck probe kind {kind!r} — cannot be checked, treat as unverified"
 
 
+def ledger_id(p):
+    """A ledger's identity is its RESOLVED PATH, never its filename.
+
+    This used to be the basename, and that made two different files with the same name
+    indistinguishable to the audit. Reported 2026-08-26: one project's ledger existed as
+    `/data/seara/mm_reason_ledger.jsonl` (62 sealed entries, never audited) *and* as
+    `<ledger_dir>/mm_reason_ledger.jsonl` (11 entries, audited). Declaring the first in the
+    config did not add it — the sweep then skipped the second because the *name* matched, so
+    the run swapped one file for the other and the witness layer went red. Worse, the scope
+    line counted names, so `N declared` reported two distinct files as one and a reader
+    could not tell that half the evidence was outside.
+    """
+    return str(Path(p).resolve())
+
+
+def name_collisions(declared, swept_paths):
+    """Two distinct files sharing a filename is a scope hazard, so say it out loud.
+
+    Not a failure: it is legal to have `<dir>/x.jsonl` and `/elsewhere/x.jsonl`. What is not
+    legal is for a verdict to be read as covering both when it covers one. Reporting it is
+    what keeps `N declared` from quietly meaning `N names`.
+    """
+    by_name = {}
+    for src, paths in (("declared", declared), ("swept", swept_paths)):
+        for p in paths:
+            rp = ledger_id(p)
+            by_name.setdefault(Path(rp).name, set()).add(rp)
+    hits = {n: sorted(v) for n, v in by_name.items() if len(v) > 1}
+    # Printed, never counted: `report()` folds anything that is not OK into the verdict, and
+    # a shared filename is a hazard to point at, not a failed check. Same convention as the
+    # exclusion notices below.
+    for n, paths in sorted(hits.items()):
+        print(f"{WARN} [scope] {n}: same filename, different files — a verdict about one says "
+              f"nothing about the other: " + " | ".join(paths))
+    return hits
+
+
 def sweep_ledger_dir(cfg, already, report):
     """Default-include: every ledger in the directory is in scope unless excluded ON PURPOSE.
 
     Returns (n_found, included_names, excluded_names). Prints the denominator, because a
     verdict without one cannot be told apart from a verdict over nothing.
+
+    `already` holds resolved PATHS (see `ledger_id`), not names.
     """
     root = cfg.get("ledger_dir")
     if not root:
@@ -124,7 +163,7 @@ def sweep_ledger_dir(cfg, already, report):
     found = sorted(Path(root).glob("*.jsonl"))
     included, skipped = [], []
     for lp in found:
-        if lp.name in already:
+        if ledger_id(lp) in already:      # the same FILE, not merely the same name
             continue
         rec = excluded.get(lp.name)
         if rec is None:
@@ -184,8 +223,12 @@ def main():
         generic_linkage(led, tag, report)
 
     # Default-include sweep: anything in the ledger dir that no one excluded on purpose.
-    covered = {Path(p).name for p in list(cfg["mm_ledgers"].values()) + am_ledgers + pm_ledgers}
+    declared_paths = list(cfg["mm_ledgers"].values()) + am_ledgers + pm_ledgers
+    covered = {ledger_id(p) for p in declared_paths}
     n_found, swept, skipped = sweep_ledger_dir(cfg, covered, report)
+    root = cfg.get("ledger_dir")
+    swept_paths = [str(Path(root) / n) for n in swept] if root else []
+    collisions = name_collisions(declared_paths, swept_paths)
 
     # L2 cross-witness — the check only the stack can do (needs `am`)
     if am_ledgers:

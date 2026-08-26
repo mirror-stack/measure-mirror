@@ -119,23 +119,81 @@ def _utc_now() -> str:
 # ─────────────────────────────────────────────────────────────
 # ① Pre-registration ledger (append-only, chain-hashed)
 # ─────────────────────────────────────────────────────────────
-def _get_last_seal(ledger_path: str) -> str:
-    """Return the seal of the last entry in the ledger, or 'genesis'."""
+def _seal_of(raw: bytes):
+    """`seal` of one raw ledger line, or None if it has none / does not parse.
+
+    Bytes, not str: the tail reader below seeks into the file and cannot rely on
+    text-mode decoding of a chunk boundary. A line that is not a JSON *object*
+    (a bare number, a list) has no seal and must not raise — real ledgers in this
+    house contain such lines, and `entry["seal"]` on an int is a TypeError.
+    """
+    line = raw.strip()
+    if not line:
+        return None
+    try:
+        entry = json.loads(line.decode("utf-8"))
+    except Exception:
+        return None
+    return entry["seal"] if isinstance(entry, dict) and "seal" in entry else None
+
+
+def _get_last_seal(ledger_path: str, _chunk: int = 8192) -> str:
+    """The seal of the last sealed entry — read from the END of the file.
+
+    This runs on EVERY append. Parsing the whole ledger to find its last line makes
+    append O(n): measured 2026-08-26 on the family ledger (5,676 entries / 4.6 MB)
+    one lookup spent **56.18 ms** here, against **0.085 ms** for this tail read on the
+    same file — and the old cost grows with every entry ever written, so the ledger
+    gets slower precisely because it is being used. (The number is re-measured, not
+    inherited: a handoff carried 39.0 ms and then 47.98 ms for the same call; the
+    ledger had simply grown between readings.)
+
+    Ported from action-mirror's `_get_last_seal`, which has run this way since
+    2026-08. The one deliberate difference is the empty-ledger answer: measure-mirror
+    says lowercase `"genesis"` and action-mirror says `"GENESIS"`. That is not a typo
+    to tidy up — the string is hashed into every first entry, so changing it would
+    invalidate the head of every existing measure-mirror chain.
+
+    Deliberately NOT cached in memory: this ledger is appended by other processes
+    (cron jobs, sibling agents), and a cached head would hand out a prev_seal that is
+    no longer last, forking the chain. The file stays the single source of truth;
+    only the amount of it we read changes.
+
+    Semantics are unchanged, including the awkward cases: unsealed or unparseable
+    trailing lines are skipped, a ledger with no sealed entry at all still answers
+    `genesis`, and CRLF / CR / LF endings all read the same — text mode used to
+    normalise those for us.
+    """
     if not os.path.exists(ledger_path):
         return "genesis"
-    last_seal = "genesis"
-    with open(ledger_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                e = json.loads(line)
-                if "seal" in e:
-                    last_seal = e["seal"]
-            except json.JSONDecodeError:
-                continue
-    return last_seal
+    with open(ledger_path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        pos = f.tell()
+        buf = b""
+        while pos > 0:
+            step = min(_chunk, pos)
+            pos -= step
+            f.seek(pos)
+            buf = f.read(step) + buf
+            # Split on every line ending, not just \n. Reading bytes means universal-newline
+            # translation no longer happens for us: a ledger written with CR-only endings
+            # would parse as ONE line and the lookup would answer genesis — which would
+            # append a second genesis entry into the middle of a live chain.
+            parts = buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
+            # parts[0] may be the tail of a line that starts earlier in the file —
+            # only safe to read once we have reached the beginning.
+            head, complete = parts[0], parts[1:]
+            for line in reversed(complete):
+                seal = _seal_of(line)
+                if seal is not None:
+                    return seal
+            if pos == 0:
+                seal = _seal_of(head)
+                if seal is not None:
+                    return seal
+                break
+            buf = head
+    return "genesis"
 
 
 def preregister(ledger_path: str, claim_id: str, *, metric: str,

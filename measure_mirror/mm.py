@@ -3806,6 +3806,13 @@ def witness(ledger_path: str, claim_id: str, command: list[str], *,
     return entry
 
 
+# The subcommands that append to the ledger — the only ones that can bring a file into
+# existence. Module level on purpose: this set decides which invocations are gated, so a
+# test has to be able to read it. A subcommand that starts writing and is not added here
+# would be un-gated silently, which is the failure this set exists to prevent.
+LEDGER_WRITERS = frozenset({"register", "retract", "run"})
+
+
 # ─────────────────────────────────────────────────────────────
 # CLI
 # ─────────────────────────────────────────────────────────────
@@ -3841,6 +3848,9 @@ def _cli() -> None:
         description="🪞 Measurement Mirror — audit AI evaluation claims")
     p.add_argument("--ledger", default="mm_ledger.jsonl",
                    help="Ledger path (default: ./mm_ledger.jsonl)")
+    p.add_argument("--new-ledger", dest="new_ledger", action="store_true",
+                   help="Allow creating the ledger file if it does not exist yet "
+                        "(required once, for the first seal in a new ledger)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("register",
@@ -3928,7 +3938,46 @@ def _cli() -> None:
     rn.add_argument("--no-calibrate", dest="no_calibrate", action="store_true",
                     help="Skip self-calibration before running the command")
 
+    # Accept `--new-ledger` on either side of the subcommand. It is the one flag a
+    # first-time user is forced to type, and argparse puts top-level options before the
+    # subcommand, so `mm register x --new-ledger` would otherwise fail with
+    # "unrecognized arguments" and no hint about where it belongs.
+    #
+    # SUPPRESS is load-bearing: with an ordinary `default=False`, the subparser writes its
+    # own default over the value the main parser already set, and `mm --new-ledger register`
+    # would silently parse as False — the flag would appear to work while doing nothing.
+    for _sub in (r, rt, rn):
+        _sub.add_argument("--new-ledger", dest="new_ledger", action="store_true",
+                          default=argparse.SUPPRESS,
+                          help="Allow creating the ledger file if it does not exist yet")
+
     args = p.parse_args()
+
+    # A ledger that does not exist yet is created on the first append. That is convenient
+    # and it is also how ledgers are born by accident: `--ledger` defaults to a RELATIVE
+    # path, so a mistyped name or the wrong working directory silently starts a second
+    # ledger that is indistinguishable, on disk, from one someone meant to create.
+    #
+    # Measured 2026-08-26 in the ledger directory this project's authors use: 92 ledger
+    # files, of which the audit configuration names 4. Two lanes had seals sitting in a
+    # file called `mm_ledger.jsonl` — this default's own filename — and 62 seals of a
+    # third lane's declared ledger were outside the audited directory entirely, unnoticed
+    # because every integrity check they ran was green: the chains were intact, they were
+    # just in the wrong place, and nothing checks placement.
+    #
+    # So appending to an existing ledger stays exactly as it was; only *creating* one now
+    # has to be said out loud. The error names the absolute path, because "no such file"
+    # is not useful when the whole failure mode is not knowing which directory you are in.
+    if args.cmd in LEDGER_WRITERS and not args.new_ledger \
+            and not os.path.exists(args.ledger):
+        print(f"mm: no ledger at {os.path.abspath(args.ledger)}\n"
+              f"    `mm {args.cmd}` appends to a ledger; this would create a new one.\n"
+              f"    If that is what you want, say so once:\n"
+              f"        mm --ledger {args.ledger} --new-ledger {args.cmd} ...\n"
+              f"    If you meant an existing ledger, check the path and the directory "
+              f"you are in.", file=sys.stderr)
+        raise SystemExit(2)
+
     if args.cmd == "register":
         kill_thresh = None
         if args.kill_threshold is not None:

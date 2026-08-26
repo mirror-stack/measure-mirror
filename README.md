@@ -88,8 +88,10 @@ MCP entry point: `mm-mcp`
 ```bash
 # Step 1 — BEFORE running your experiment: seal the criteria
 #   always include a kill-condition — a claim you can't fail is unfalsifiable
+#   --new-ledger is needed only for the FIRST seal in a ledger that does not exist yet;
+#   every later command appends without it (see "Creating a ledger is explicit" below)
 mm register my_model --metric acc --min-n 200 --baseline 0.5 --pass 0.60 \
-           --kill-threshold 0.55 --kill-direction below
+           --new-ledger --kill-threshold 0.55 --kill-direction below
 
 # Step 2 — AFTER evaluation: audit the result against the sealed criteria
 mm audit my_model --acc 0.72 --n 500   # pass the result inline — nothing else to create
@@ -167,6 +169,34 @@ def test_my_model_is_real():
                         reported_metric="acc", reported_acc=0.78, n=1000)
     assert_clean(findings)   # FAIL findings → test fails → CI goes red
 ```
+
+### Creating a ledger is explicit
+
+`--ledger` defaults to `./mm_ledger.jsonl` — a **relative** path. That is convenient, and
+it is also how ledgers are born by accident: a mistyped name, or the same command run from
+a different directory, quietly starts a *second* ledger that looks, on disk, exactly like
+one you meant to create.
+
+So `mm` will append to a ledger that exists, but it will not bring one into being without
+being told:
+
+```bash
+mm register c1 ...                 # ledger missing → refused, and nothing is written
+mm --new-ledger register c1 ...    # says it out loud → creates it
+mm register c2 ...                 # ledger now exists → appends, no flag needed
+```
+
+The flag works on either side of the subcommand, and the refusal prints the **absolute**
+path it would have created — "no such file" is not much help when the thing you got wrong
+is which directory you were in.
+
+> Why this is not just tidiness — measured 2026-08-26 in the ledger directory this
+> project's own authors use: 92 ledger files had accumulated against 4 named by the
+> audit configuration. Two separate
+> projects had seals sitting in a file called `mm_ledger.jsonl` — this default's own
+> filename — and 62 seals of a third project's declared ledger were outside the audited
+> directory altogether. Every integrity check stayed green the whole time, because the
+> chains *were* intact. They were in the wrong file, and nothing checks placement.
 
 ---
 

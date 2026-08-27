@@ -130,9 +130,26 @@ def test_role_label_does_not_collide_with_a_same_named_ledger(tmp_path):
 
 
 def test_scope_line_names_the_declared_ledgers(tmp_path):
-    """A count is not a set — 'N declared' must say WHICH N."""
-    r = _run(_setup(tmp_path), "--allow-partial", env=_env_without_am())
+    """A count is not a set — 'N declared' must say WHICH N.
+
+    Updated 2026-08-26 to require the full PATH rather than the bare filename. The original
+    defect here was labelling by role (`am`) so an auditor grepping for `seara.jsonl` found
+    nothing; a path still contains the filename, so that grep keeps working. What the bare
+    name could not do is tell two files apart: `<ledger_dir>/x.jsonl` and `/elsewhere/x.jsonl`
+    both printed as `x.jsonl`, and `N declared` counted them as one. Same failure one level
+    up — a name is not an identity.
+    """
+    cfg = _setup(tmp_path)
+    conf = json.loads(cfg.read_text(encoding="utf-8"))
+    declared = [p for p in (list((conf.get("mm_ledgers") or {}).values())
+                            + [conf.get("am_ledger"), conf.get("pm_ledger")]) if p]
+    assert len(declared) == 1, f"fixture changed — expected one declared ledger, got {declared}"
+    path = os.path.realpath(declared[0])
+    r = _run(cfg, "--allow-partial", env=_env_without_am())
     scope = [l for l in r.stdout.splitlines() if l.startswith("--- scope:")]
     assert scope, "no scope line"
-    assert "1 declared (family.jsonl)" in scope[0], (
-        f"'N declared' has to name which N: {scope[0]}")
+    assert "1 declared" in scope[0], f"'N declared' count missing: {scope[0]}"
+    assert "family.jsonl" in scope[0], (
+        f"an auditor greps for the filename — it must survive: {scope[0]}")
+    assert path in scope[0], (
+        f"'N declared' has to identify the FILE, not just its name: {scope[0]}")

@@ -5,6 +5,49 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **Creating a ledger now has to be said out loud; appending to one does not.**
+  `--ledger` defaults to `./mm_ledger.jsonl` — a *relative* path — and the first append
+  brought the file into existence. So a mistyped name, or the same command run from a
+  different directory, quietly started a second ledger that was indistinguishable on disk
+  from one someone meant to create.
+
+  Measured 2026-08-26 in the authors' own ledger directory: **92 ledger files against 4
+  named by the audit configuration.** Two separate projects had seals in a file called
+  `mm_ledger.jsonl` — this default's own filename — and **62 seals** of a third project's
+  declared ledger sat outside the audited directory entirely. Every integrity check was
+  green throughout, because the chains *were* intact. The failure was placement, and
+  nothing checked placement.
+
+  `register`, `retract`, and `run` now refuse to create a missing ledger and write
+  nothing; `--new-ledger` (accepted on either side of the subcommand) creates it. The
+  refusal prints the **absolute** path, since "no such file" is little help when what you
+  got wrong is which directory you were in. **Appending to an existing ledger is
+  unchanged and needs no flag** — including a file that exists but is empty, which is a
+  deliberate act. Read-only subcommands are untouched.
+
+  **Breaking for the first command only**, and the READMEs' Quick Start now carries the
+  flag. Scripts that create a ledger as a side effect of their first seal need
+  `--new-ledger` added once.
+
+### Fixed
+- **`_get_last_seal` no longer parses the whole ledger on every append.** It read the file
+  forward from the start to find the last line, making each append O(n): measured
+  2026-08-26 on a 4.6 MB / 5,676-entry ledger, **56.18 ms** per lookup against **0.091 ms**
+  reading from the end — and the old cost grew with every entry ever written, so the
+  ledger got slower precisely because it was being used. Ported from action-mirror, which
+  has read this way since 2026-08. Answers are unchanged on all 96 ledgers checked,
+  including the awkward cases (unsealed or unparseable trailing lines, CRLF/CR/LF, a
+  ledger with no sealed entry at all). The empty-ledger answer stays lowercase
+  `genesis` — it is hashed into the head of every existing chain and cannot be tidied.
+- **A ledger line that is not a JSON object no longer raises.** `"seal" in e` is a
+  TypeError when a line parses to a bare number, which real ledgers contain; such lines
+  are now skipped like any other unsealed line.
+
+---
+
 ## [0.40.0] — 2026-08-25
 
 ### Changed

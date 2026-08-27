@@ -119,23 +119,81 @@ def _utc_now() -> str:
 # ─────────────────────────────────────────────────────────────
 # ① Pre-registration ledger (append-only, chain-hashed)
 # ─────────────────────────────────────────────────────────────
-def _get_last_seal(ledger_path: str) -> str:
-    """Return the seal of the last entry in the ledger, or 'genesis'."""
+def _seal_of(raw: bytes):
+    """`seal` of one raw ledger line, or None if it has none / does not parse.
+
+    Bytes, not str: the tail reader below seeks into the file and cannot rely on
+    text-mode decoding of a chunk boundary. A line that is not a JSON *object*
+    (a bare number, a list) has no seal and must not raise — real ledgers in this
+    house contain such lines, and `entry["seal"]` on an int is a TypeError.
+    """
+    line = raw.strip()
+    if not line:
+        return None
+    try:
+        entry = json.loads(line.decode("utf-8"))
+    except Exception:
+        return None
+    return entry["seal"] if isinstance(entry, dict) and "seal" in entry else None
+
+
+def _get_last_seal(ledger_path: str, _chunk: int = 8192) -> str:
+    """The seal of the last sealed entry — read from the END of the file.
+
+    This runs on EVERY append. Parsing the whole ledger to find its last line makes
+    append O(n): measured 2026-08-26 on the family ledger (5,676 entries / 4.6 MB)
+    one lookup spent **56.18 ms** here, against **0.085 ms** for this tail read on the
+    same file — and the old cost grows with every entry ever written, so the ledger
+    gets slower precisely because it is being used. (The number is re-measured, not
+    inherited: a handoff carried 39.0 ms and then 47.98 ms for the same call; the
+    ledger had simply grown between readings.)
+
+    Ported from action-mirror's `_get_last_seal`, which has run this way since
+    2026-08. The one deliberate difference is the empty-ledger answer: measure-mirror
+    says lowercase `"genesis"` and action-mirror says `"GENESIS"`. That is not a typo
+    to tidy up — the string is hashed into every first entry, so changing it would
+    invalidate the head of every existing measure-mirror chain.
+
+    Deliberately NOT cached in memory: this ledger is appended by other processes
+    (cron jobs, sibling agents), and a cached head would hand out a prev_seal that is
+    no longer last, forking the chain. The file stays the single source of truth;
+    only the amount of it we read changes.
+
+    Semantics are unchanged, including the awkward cases: unsealed or unparseable
+    trailing lines are skipped, a ledger with no sealed entry at all still answers
+    `genesis`, and CRLF / CR / LF endings all read the same — text mode used to
+    normalise those for us.
+    """
     if not os.path.exists(ledger_path):
         return "genesis"
-    last_seal = "genesis"
-    with open(ledger_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                e = json.loads(line)
-                if "seal" in e:
-                    last_seal = e["seal"]
-            except json.JSONDecodeError:
-                continue
-    return last_seal
+    with open(ledger_path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        pos = f.tell()
+        buf = b""
+        while pos > 0:
+            step = min(_chunk, pos)
+            pos -= step
+            f.seek(pos)
+            buf = f.read(step) + buf
+            # Split on every line ending, not just \n. Reading bytes means universal-newline
+            # translation no longer happens for us: a ledger written with CR-only endings
+            # would parse as ONE line and the lookup would answer genesis — which would
+            # append a second genesis entry into the middle of a live chain.
+            parts = buf.replace(b"\r\n", b"\n").replace(b"\r", b"\n").split(b"\n")
+            # parts[0] may be the tail of a line that starts earlier in the file —
+            # only safe to read once we have reached the beginning.
+            head, complete = parts[0], parts[1:]
+            for line in reversed(complete):
+                seal = _seal_of(line)
+                if seal is not None:
+                    return seal
+            if pos == 0:
+                seal = _seal_of(head)
+                if seal is not None:
+                    return seal
+                break
+            buf = head
+    return "genesis"
 
 
 def preregister(ledger_path: str, claim_id: str, *, metric: str,
@@ -3748,6 +3806,13 @@ def witness(ledger_path: str, claim_id: str, command: list[str], *,
     return entry
 
 
+# The subcommands that append to the ledger — the only ones that can bring a file into
+# existence. Module level on purpose: this set decides which invocations are gated, so a
+# test has to be able to read it. A subcommand that starts writing and is not added here
+# would be un-gated silently, which is the failure this set exists to prevent.
+LEDGER_WRITERS = frozenset({"register", "retract", "run"})
+
+
 # ─────────────────────────────────────────────────────────────
 # CLI
 # ─────────────────────────────────────────────────────────────
@@ -3783,6 +3848,9 @@ def _cli() -> None:
         description="🪞 Measurement Mirror — audit AI evaluation claims")
     p.add_argument("--ledger", default="mm_ledger.jsonl",
                    help="Ledger path (default: ./mm_ledger.jsonl)")
+    p.add_argument("--new-ledger", dest="new_ledger", action="store_true",
+                   help="Allow creating the ledger file if it does not exist yet "
+                        "(required once, for the first seal in a new ledger)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("register",
@@ -3870,7 +3938,46 @@ def _cli() -> None:
     rn.add_argument("--no-calibrate", dest="no_calibrate", action="store_true",
                     help="Skip self-calibration before running the command")
 
+    # Accept `--new-ledger` on either side of the subcommand. It is the one flag a
+    # first-time user is forced to type, and argparse puts top-level options before the
+    # subcommand, so `mm register x --new-ledger` would otherwise fail with
+    # "unrecognized arguments" and no hint about where it belongs.
+    #
+    # SUPPRESS is load-bearing: with an ordinary `default=False`, the subparser writes its
+    # own default over the value the main parser already set, and `mm --new-ledger register`
+    # would silently parse as False — the flag would appear to work while doing nothing.
+    for _sub in (r, rt, rn):
+        _sub.add_argument("--new-ledger", dest="new_ledger", action="store_true",
+                          default=argparse.SUPPRESS,
+                          help="Allow creating the ledger file if it does not exist yet")
+
     args = p.parse_args()
+
+    # A ledger that does not exist yet is created on the first append. That is convenient
+    # and it is also how ledgers are born by accident: `--ledger` defaults to a RELATIVE
+    # path, so a mistyped name or the wrong working directory silently starts a second
+    # ledger that is indistinguishable, on disk, from one someone meant to create.
+    #
+    # Measured 2026-08-26 in the ledger directory this project's authors use: 92 ledger
+    # files, of which the audit configuration names 4. Two lanes had seals sitting in a
+    # file called `mm_ledger.jsonl` — this default's own filename — and 62 seals of a
+    # third lane's declared ledger were outside the audited directory entirely, unnoticed
+    # because every integrity check they ran was green: the chains were intact, they were
+    # just in the wrong place, and nothing checks placement.
+    #
+    # So appending to an existing ledger stays exactly as it was; only *creating* one now
+    # has to be said out loud. The error names the absolute path, because "no such file"
+    # is not useful when the whole failure mode is not knowing which directory you are in.
+    if args.cmd in LEDGER_WRITERS and not args.new_ledger \
+            and not os.path.exists(args.ledger):
+        print(f"mm: no ledger at {os.path.abspath(args.ledger)}\n"
+              f"    `mm {args.cmd}` appends to a ledger; this would create a new one.\n"
+              f"    If that is what you want, say so once:\n"
+              f"        mm --ledger {args.ledger} --new-ledger {args.cmd} ...\n"
+              f"    If you meant an existing ledger, check the path and the directory "
+              f"you are in.", file=sys.stderr)
+        raise SystemExit(2)
+
     if args.cmd == "register":
         kill_thresh = None
         if args.kill_threshold is not None:

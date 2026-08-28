@@ -115,3 +115,19 @@ def test_accessor_aggregates_neutral_control_outcomes(tmp_path):
                 for e in mm.declared_pre_seal_checks(led, cid)
                 if e["name"] == "neutral-control"]
     assert outcomes == ["not_fired", "fired", None]       # the third is the gap
+
+
+# ── the signature is an interface, not a comment ─────────────────────────────
+# Everything above proves the BODY takes objects. The type hint said list[str]
+# anyway, and every wrapper that derives a schema from it — the mirror-stack-mcp
+# server does — rejected the object form at the wire, so the ⑫h advice above was
+# unfollowable for MCP callers for as long as it existed. The hint is load-bearing
+# for downstream, not documentation. Measured 08-28 ([자생] inbox 0826-145737).
+
+def test_preregister_hint_admits_the_object_form_the_body_accepts():
+    import typing
+    hint = typing.get_type_hints(mm.preregister)["pre_seal_checks"]
+    # list[str | dict] | None  →  the element union must contain dict
+    (listish,) = [a for a in typing.get_args(hint) if a is not type(None)]
+    (elem,) = typing.get_args(listish)
+    assert dict in typing.get_args(elem), hint

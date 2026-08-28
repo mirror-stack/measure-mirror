@@ -208,7 +208,7 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
                 anchor_cell: str | None = None,
                 anchor_line_source: str | None = None,
                 known_confounds: list[str] | None = None,
-                pre_seal_checks: list[str] | None = None) -> dict:
+                pre_seal_checks: list[str | dict] | None = None) -> dict:
     """Seal evaluation criteria BEFORE seeing results.
 
     Each entry is cryptographically linked to the previous one (chain hash).

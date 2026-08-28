@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.41.1] — 2026-08-28
+
+### Fixed
+- **`preregister(pre_seal_checks=…)` has accepted objects since ⑫h existed; the signature
+  never said so.** The body validates `str | dict`, the docstring documents the object form,
+  and the lint tells authors to seal each check as `{'name': …, 'result': …}` — while the
+  type hint still read `list[str]`.
+
+  Nothing broke here, because Python does not enforce hints. Downstream did. Any wrapper
+  that derives a schema from the signature published `items: {"type": "string"}` and
+  rejected the object at the wire, which made the lint's own advice unfollowable for those
+  callers: send a bare name and get WARNed, send the object and get rejected before the
+  call. Writing the result into the string instead — the obvious workaround — clears
+  neither, and silently makes the check name unrecognised, so `declared_pre_seal_checks()`
+  can no longer aggregate it by name.
+
+  Reported by another lane on 2026-08-26 against mirror-stack-mcp (which derives its schema
+  exactly this way) and reproduced on 2026-08-28. The hint is now `list[str | dict] | None`,
+  and a test asserts it admits what the body accepts. **A type hint on a public function is
+  an interface for code generators, not a comment** — this one was load-bearing for every
+  downstream schema and was measured only after it had shipped.
+
+---
+
 ## [0.41.0] — 2026-08-28
 
 ### Changed

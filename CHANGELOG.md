@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [0.41.0] — 2026-08-28
 
 ### Changed
 - **Creating a ledger now has to be said out loud; appending to one does not.**

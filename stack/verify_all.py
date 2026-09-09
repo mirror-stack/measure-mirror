@@ -59,7 +59,8 @@ def cross_witness(am_ledger, peer_name, peer_path, report, skipped=None):
         return
     out = (r.stdout or r.stderr).strip().replace("\n", " | ")
     ok = r.returncode == 0 and ("OK" in out or "✅" in out or "consistent" in out.lower())
-    report(OK if ok else FAIL, "L2 witness", peer_name, out)
+    report(OK if ok else FAIL, "L2 witness", peer_name,
+           "depth=HEAD_WITNESS; independent operator NOT verified; " + out)
 
 
 def am_self_verify(am_ledger, report, tag="am", skipped=None):
@@ -72,7 +73,8 @@ def am_self_verify(am_ledger, report, tag="am", skipped=None):
         return
     ok = r.returncode == 0 and "OK" in r.stdout
     report(OK if ok else FAIL, "L1 chain", tag,
-           "am verify: " + (r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr.strip()))
+           "depth=HASH_RECOMPUTED; am verify: " +
+           (r.stdout.strip().splitlines()[-1] if r.stdout else r.stderr.strip()))
 
 
 REQUIRED_EXCLUSION_FIELDS = ("reason", "decided_by", "decided_at", "recheck_if")
@@ -270,6 +272,15 @@ def main():
         verdict, code = "ALL OK", 0
 
     print(f"=== verdict: {verdict} ({n_ok}/{total}) ===")
+    print("--- verification depth: the verdict describes the checks above, not uniform proof. "
+          "LINKAGE_ONLY does not recompute content hashes; HASH_RECOMPUTED does not "
+          "authenticate the author; LOCAL_SNAPSHOT is not an external timestamp; "
+          "HEAD_WITNESS is not an independent reproduction. ---")
+    print("--- unverified: external-clock precedence, independent reproduction, "
+          "content truth and completeness of recorded activity ---")
+    if swept:
+        print(f"--- linkage-only auto-included ledgers ({len(swept)}): "
+              + ", ".join(swept) + " ---")
     for layer in could_not_run:
         print(f"    did not run: {layer}")
     if could_not_run:

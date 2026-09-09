@@ -1,5 +1,10 @@
 # 🪞 Measurement Mirror
 
+스택 감사는 검증 깊이를 표시합니다. `LINKAGE_ONLY`는 연결만 확인하며,
+`HASH_RECOMPUTED`는 내용 해시 재계산입니다. `LOCAL_SNAPSHOT`은 외부 시점 증명이
+아니고 `HEAD_WITNESS`는 독립 재현이 아닙니다. `ALL OK`는 표시된 검사 통과이지
+주장의 진실 인증이 아닙니다. 자동 포함된 연결 검사 전용 원장도 이름으로 나열합니다.
+
 <p align="center">
   <img src="docs/measure_mirror_og.png" alt="Measurement Mirror" width="500">
 </p>

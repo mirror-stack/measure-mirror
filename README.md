@@ -1,5 +1,11 @@
 # 🪞 Measurement Mirror
 
+Stack audit outputs label verification depth: `LINKAGE_ONLY` checks pointers, not
+content hashes; `HASH_RECOMPUTED` checks hashes, not author identity;
+`LOCAL_SNAPSHOT` is not an external timestamp; `HEAD_WITNESS` is not independent
+reproduction. `ALL OK` means the displayed checks passed, not that recorded claims
+are true. Automatically included linkage-only ledgers are listed explicitly.
+
 <p align="center">
   <img src="docs/measure_mirror_og.png" alt="Measurement Mirror" width="500">
 </p>

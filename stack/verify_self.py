@@ -35,7 +35,8 @@ def generic_linkage(path, name, report):
     sys.path.insert(0, str(HERE.parent))
     from measure_mirror.mm import linkage_check
     ok, msg, entries = linkage_check(path)
-    report(OK if ok else FAIL, "L1 chain", name, msg)
+    report(OK if ok else FAIL, "L1 chain", name,
+           "depth=LINKAGE_ONLY; seals NOT recomputed; " + msg)
     return entries
 
 
@@ -52,7 +53,8 @@ def mm_self_verify(path, name, report):
             # Report the DENOMINATOR, not just the colour: "seals valid" over zero entries
             # is the same vacuous pass the verdict-line guard blocks one level up.
             n = len(load_jsonl(path))
-            report(OK, "L1 chain", name, f"mm verify_chain: seals valid ({n} entries checked)")
+            report(OK, "L1 chain", name,
+                   f"depth=HASH_RECOMPUTED; mm verify_chain: seals valid ({n} entries checked)")
     except Exception as e:
         report(WARN, "L1 chain", name, f"mm lib unavailable, linkage-only ({e})")
 
@@ -68,13 +70,16 @@ def anchor_check(anchor_file, report):
         return
     cur = hashlib.sha256(lp.read_bytes()).hexdigest()
     if cur == a["anchor_hash"]:
-        report(OK, "L3 anchor", name, f"intact (unchanged since {a['ts']})")
+        report(OK, "L3 anchor", name,
+               f"depth=LOCAL_SNAPSHOT; intact (unchanged since declared time {a['ts']}); "
+               "external clock NOT verified")
         return
     entries = load_jsonl(lp)
     n = a["entry_count"]
     if len(entries) >= n and str(entries[n - 1].get("seal", "")) == a["head_seal"]:
         report(OK, "L3 anchor", name,
-               f"extended ({n}→{len(entries)} entries, anchored head still in chain)")
+               f"depth=LOCAL_SNAPSHOT; extended ({n}→{len(entries)} entries, anchored head still in chain); "
+               "external clock NOT verified")
     else:
         report(FAIL, "L3 anchor", name,
                "REPLACED? anchored head_seal not found at anchored position")

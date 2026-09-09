@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.41.2] — 2026-09-09
+
+- Label stack verification depth: linkage-only, recomputed hashes, local snapshots,
+  and pinned-head witnesses are distinct checks, not interchangeable proof.
+- Name all automatically included linkage-only ledgers next to the verdict;
+  explicitly leave external-clock precedence, independent reproduction and content
+  truth unverified. Existing ledger bytes and seal formats are unchanged.
+
 All notable changes to Measurement Mirror are documented here.  
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 

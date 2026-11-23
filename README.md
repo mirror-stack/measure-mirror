@@ -7,33 +7,33 @@ reproduction. `ALL OK` means the displayed checks passed, not that recorded clai
 are true. Automatically included linkage-only ledgers are listed explicitly.
 
 <p align="center">
-  <img src="docs/measure_mirror_og.png" alt="Measurement Mirror" width="500">
+  <img src="https://raw.githubusercontent.com/mirror-stack/measure-mirror/main/docs/measure_mirror_og.png" alt="Measurement Mirror" width="500">
 </p>
 
 [![CI](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml/badge.svg)](https://github.com/mirror-stack/measure-mirror/actions/workflows/ci.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![core deps: zero](https://img.shields.io/badge/core%20deps-zero-brightgreen.svg)](pyproject.toml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/mirror-stack/measure-mirror/blob/main/LICENSE)
+[![core deps: zero](https://img.shields.io/badge/core%20deps-zero-brightgreen.svg)](https://github.com/mirror-stack/measure-mirror/blob/main/pyproject.toml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
 **Catch AI evaluation illusions — false positives and false negatives — automatically.**  
 Zero training · Deterministic · Stdlib-only core (Python 3.10+; the `judge` and `subspace` modules are optional and do have dependencies).
 
 > Built while honestly killing our own project.  
-> The makers ran it on themselves first. → [🦋 Origin Story](docs/CHRONICLE.md)
+> The makers ran it on themselves first. → [🦋 Origin Story](https://github.com/mirror-stack/measure-mirror/blob/main/docs/CHRONICLE.md)
 
 **[⏱ 5-minute tutorial →](https://github.com/mirror-stack/measure-mirror/blob/main/docs/TUTORIAL.md)** — seal a claim, watch it fail three ways, tamper with the ledger, record a KILL
-**[📖 Full Probe Guide →](docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
-**[📜 MIRROR-SPEC v1.1 →](docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
-**[🦋 Catalog of Measurement Illusions →](catalog/README.md)** — 81 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
+**[📖 Full Probe Guide →](https://github.com/mirror-stack/measure-mirror/blob/main/docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
+**[📜 MIRROR-SPEC v1.1 →](https://github.com/mirror-stack/measure-mirror/blob/main/docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
+**[🦋 Catalog of Measurement Illusions →](https://github.com/mirror-stack/measure-mirror/blob/main/catalog/README.md)** — 81 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)
 
-> **🪞🔎🪪 New — Mirror Stack** ([`stack/`](stack/)): measure-mirror is the *claims* layer of a
+> **🪞🔎🪪 New — Mirror Stack** ([`stack/`](https://github.com/mirror-stack/measure-mirror/tree/main/stack/)): measure-mirror is the *claims* layer of a
 > three-mirror integrity stack for autonomous research agents (claims · actions · provenance,
 > joined by five conventions + one `verify-all` command). Includes a real case study:
-> **[an agent that retracted its own experiment before spending a single token](stack/CASE_STUDY_compute_governor.md)**
+> **[an agent that retracted its own experiment before spending a single token](https://github.com/mirror-stack/measure-mirror/blob/main/stack/CASE_STUDY_compute_governor.md)**
 > — preregistration → power-check design fix → adversarial amendments → prior-art retraction,
 > with the actual chain-sealed ledger bundled so you can verify it yourself.
 > What it guarantees — and the one thing no tool can (independence) — is mapped in four pillars:
-> **[PILLARS.md](stack/PILLARS.md)** (integrity · non-erasure · falsifiability · verifiability).
+> **[PILLARS.md](https://github.com/mirror-stack/measure-mirror/blob/main/stack/PILLARS.md)** (integrity · non-erasure · falsifiability · verifiability).
 > measure-mirror itself is unchanged (feature-frozen core; the stack adds conventions, not probes).
 
 | Tool | Audits | Question |
@@ -308,7 +308,7 @@ extra keys fire extra probes. The `data` keys are identical to the JSON file for
 
 🟡 **Validated on one experiment family; a second one killed the generalization, and the gap it exposed is now closed.** Replaying the same planted recipes on a different real substrate (768-d DINO embeddings from another arc; seal `5c78e503`, result `am 2ab6eab7`) scored **8/10 against a pre-committed bar of 1.0** — FP=1, FN=1. The load-bearing failure: **㉘ had no guard against a swapped-role claim** — the `relabeled_dof` case passed on the first substrate only because the shuffled arm did not beat the null *there*. That pass looked like a guard and was substrate luck.
 
-🟢 **Closed in v0.31.0 by `dof-outperforms-target`** — a coherence law, not a heuristic: destroying the claimed structure cannot *add* effect, so a control that beats its target means the labels are swapped or the control is not one. Sealed on the FM×CDE holdout at **22/22** (`582f4130`, result `am 45d5f3d2`), and it closes the substrate-2 false negative too. It catches the swap only when the true target genuinely beats its control; when the two are indistinguishable the swap stays invisible — and so does the effect it would hide. Full write-up: [eval/subspace_substrate2/RESULTS.md](eval/subspace_substrate2/RESULTS.md).
+🟢 **Closed in v0.31.0 by `dof-outperforms-target`** — a coherence law, not a heuristic: destroying the claimed structure cannot *add* effect, so a control that beats its target means the labels are swapped or the control is not one. Sealed on the FM×CDE holdout at **22/22** (`582f4130`, result `am 45d5f3d2`), and it closes the substrate-2 false negative too. It catches the swap only when the true target genuinely beats its control; when the two are indistinguishable the swap stays invisible — and so does the effect it would hide. Full write-up: [eval/subspace_substrate2/RESULTS.md](https://github.com/mirror-stack/measure-mirror/blob/main/eval/subspace_substrate2/RESULTS.md).
 
 | Probe | # | Catches |
 |---|---|---|
@@ -907,7 +907,7 @@ pattern past-you already got burned by.** It works regardless of how private the
 data is — it never leaves your machine.
 
 `db/` is split by **who produced the record**, so the two kinds are never
-confused (see [`db/README.md`](db/README.md) for the full structure):
+confused (see [`db/README.md`](https://github.com/mirror-stack/measure-mirror/blob/main/db/README.md) for the full structure):
 
 ### `db/measured/` — what measure-mirror produces (quantitative)
 
@@ -963,7 +963,7 @@ reproduces the recorded verdict with **0 mismatches**.
 
 ## Design Principles
 
-- **Stdlib-only core** — pure Python stdlib, no dependencies. Say it with its scope attached: the optional `judge` module adds openai/anthropic, and the optional `subspace` module (㉘ **layer B**) adds numpy. **Stdlib-only describes the core and every layer-A auditor, not the whole package** — collapsing that into a bare "zero deps" headline is the overgeneralisation catalogued in [zero-dep-scope-overgeneralize](catalog/self-catch/zero-dep-scope-overgeneralize.md), caught on this very README.
+- **Stdlib-only core** — pure Python stdlib, no dependencies. Say it with its scope attached: the optional `judge` module adds openai/anthropic, and the optional `subspace` module (㉘ **layer B**) adds numpy. **Stdlib-only describes the core and every layer-A auditor, not the whole package** — collapsing that into a bare "zero deps" headline is the overgeneralisation catalogued in [zero-dep-scope-overgeneralize](https://github.com/mirror-stack/measure-mirror/blob/main/catalog/self-catch/zero-dep-scope-overgeneralize.md), caught on this very README.
 - **Bidirectional** — catches false *positives* **and** false *negatives*. Premature negative closures are also illusions.
 - **Tamper-evident pre-registration** — SHA-256 seal on first write. Only the *first* sealed registration for a `claim_id` counts in `audit()`; a later re-registration is still appended to the chain (the record is never silently dropped) but cannot override the original. Ledger tampering is detected on every audit.
 - **Independent probes** — each check is a standalone function. Add new ones without touching existing code.
@@ -984,8 +984,8 @@ New probes and baseline contributions are welcome.
 
 ## License
 
-[Apache 2.0](LICENSE)
+[Apache 2.0](https://github.com/mirror-stack/measure-mirror/blob/main/LICENSE)
 
 ---
 
-**[한국어 README →](README_KO.md)**
+**[한국어 README →](https://github.com/mirror-stack/measure-mirror/blob/main/README_KO.md)**

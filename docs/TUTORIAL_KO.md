@@ -116,6 +116,6 @@ mm retract my_model --reason "KILL: acc=0.53 < sealed kill threshold 0.55"
 
 ## 다음
 
-- 실제 사례: [새 데이터에서 죽은 사전등록 주장](../stack/CASE_STUDY_babbler_active_kill.md) (영어, 기록 검증 스크립트 포함)
+- 실제 기록: [토큰 하나 쓰기 전에 자기 실험을 철회한 에이전트](../stack/CASE_STUDY_compute_governor_KO.md) (봉인된 원장 포함, 직접 검증 가능)
 - 28개 프로브 전체: [GUIDE_KO.md](GUIDE_KO.md)
 - 출력이 다르게 나왔나요? [재현 보고 열기](https://github.com/mirror-stack/measure-mirror/issues/new?template=reproduce-report.yml). 불일치 보고도 환영합니다.

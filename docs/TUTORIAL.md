@@ -122,6 +122,6 @@ good-looking one, now reports `🔴 [⑫ retraction-cascade] Claim 'my_model' ha
 
 ## Next
 
-- See a real one: [a preregistered claim that died on fresh data](https://github.com/mirror-stack/measure-mirror/blob/main/stack/CASE_STUDY_babbler_active_kill.md), with a script that verifies its records.
+- See a real record: [an agent that retracted its own experiment before spending a token](https://github.com/mirror-stack/measure-mirror/blob/main/stack/CASE_STUDY_compute_governor.md), with the sealed ledger bundled so you can verify it.
 - All 28 probes: [GUIDE.md](https://github.com/mirror-stack/measure-mirror/blob/main/docs/GUIDE.md).
 - Something here did not match what you saw? [Open a reproduce report](https://github.com/mirror-stack/measure-mirror/issues/new?template=reproduce-report.yml). Mismatches are useful.

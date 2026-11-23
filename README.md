@@ -38,8 +38,8 @@ Zero training · Deterministic · Stdlib-only core (Python 3.10+; the `judge` an
 | Tool | Audits | Question |
 |---|---|---|
 | 🪞 **measure-mirror** (you are here) | AI evaluation claims | **Is the claim honest?** |
-| 🪪 [action-mirror](https://github.com/mirror-stack/action-mirror) | Agent behaviour | Who did what, **provably**? |
-| 🔎 [provenance-mirror](https://github.com/mirror-stack/provenance-mirror) | Content authenticity | Is the **origin** proven? |
+| 🪪 [action-mirror](https://github.com/mirror-stack/action-mirror) | Agent actions | Who recorded doing what? |
+| 🔎 [provenance-mirror](https://github.com/mirror-stack/provenance-mirror) | Provenance signals | What origin hints are present? (not authenticated) |
 | 👁 [mirror-witness](https://github.com/mirror-stack/mirror-witness) | Cross-operator witness board | Who else **witnessed** it? |
 
 💬 **[Discussions](https://github.com/orgs/mirror-stack/discussions)** — questions · ideas · independent reproductions welcome.

@@ -21,6 +21,7 @@ Zero training · Deterministic · Stdlib-only core (Python 3.10+; the `judge` an
 > Built while honestly killing our own project.  
 > The makers ran it on themselves first. → [🦋 Origin Story](https://github.com/mirror-stack/measure-mirror/blob/main/docs/CHRONICLE.md)
 
+**[⏱ 5-minute tutorial →](https://github.com/mirror-stack/measure-mirror/blob/main/docs/TUTORIAL.md)** — seal a claim, watch it fail three ways, tamper with the ledger, record a KILL
 **[📖 Full Probe Guide →](https://github.com/mirror-stack/measure-mirror/blob/main/docs/GUIDE.md)** — detailed explanations, worked examples, and workflows for all 28 probes
 **[📜 MIRROR-SPEC v1.1 →](https://github.com/mirror-stack/measure-mirror/blob/main/docs/SPEC.md)** — the normative ledger format & verification protocol (ratified 2026-07-02, amended 2026-07-17; this package is its reference implementation)
 **[🦋 Catalog of Measurement Illusions →](https://github.com/mirror-stack/measure-mirror/blob/main/catalog/README.md)** — 81 real sealed cases of measurement deceiving its own authors (gaming · self-catch · false-negative guards · contamination)

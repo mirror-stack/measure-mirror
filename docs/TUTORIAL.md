@@ -82,8 +82,9 @@ mm audit my_model --acc 0.72 --n 40
    🔴 [① pre-registration(min_n)] n=40 < registered min_n=200.
 ```
 
-Note: `mm audit` prints FAIL but currently exits with status 0. To make CI go red, use the
-pytest integration in the README (`assert_clean`).
+Exit status: on `main` (next release), `mm audit` exits 1 when any probe FAILs and 0 for OK
+or WARN, so it can stop a shell script or CI step. v0.41.2, installed above, still exits 0
+even on FAIL; with it, use the pytest integration in the README (`assert_clean`) for CI.
 
 ## 5. Try to move the goalposts
 

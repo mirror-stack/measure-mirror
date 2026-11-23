@@ -1,0 +1,73 @@
+name: Publish to PyPI
+
+# Manual only. Nothing is uploaded on push, tag, or merge.
+# Uses PyPI Trusted Publishing (OIDC): no API token is stored in this repo.
+# One-time setup on pypi.org / test.pypi.org is described in docs/RELEASING.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing git tag to publish, e.g. v0.41.3"
+        required: true
+      target:
+        description: "Where to upload"
+        required: true
+        default: testpypi
+        type: choice
+        options: [testpypi, pypi]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tag must match pyproject version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          v=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          pv=$(python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('measure_mirror/__init__.py').read()).group(1))")
+          echo "tag=$TAG pyproject=$v __version__=$pv"
+          test "$TAG" = "v$v" && test "$v" = "$pv"
+      - name: Build sdist + wheel
+        run: |
+          pip install build twine
+          python -m build
+          twine check --strict dist/*
+      - name: Smoke-test the built wheel in a clean env
+        run: |
+          python -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install dist/*.whl
+          cd /tmp && /tmp/smoke/bin/python "$GITHUB_WORKSPACE/tests/smoke_installed.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    # Create these environments in Settings → Environments and add yourself as a
+    # required reviewer, so every upload waits for a human click.
+    environment: ${{ inputs.target }}
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Upload to TestPyPI
+        if: inputs.target == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+      - name: Upload to PyPI
+        if: inputs.target == 'pypi'
+        uses: pypa/gh-action-pypi-publish@release/v1

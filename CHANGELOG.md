@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+- Packaging for PyPI (not uploaded yet): SPDX `license = "Apache-2.0"` (setuptools>=77),
+  a manual Trusted-Publishing workflow (`publish.yml`, TestPyPI first), and
+  `docs/RELEASING.md`. README links are now absolute so they work on the PyPI page,
+  guarded by `tests/test_readme_pypi_links.py`. No code or ledger format changes.
+
 ## [0.41.2] — 2026-09-09
 
 - Label stack verification depth: linkage-only, recomputed hashes, local snapshots,

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **CLI:** `mm audit` now exits with status 1 when any probe FAILs (OK and WARN still
+  exit 0). It used to print `Overall: 🔴 FAIL` and exit 0, which a CI step reads as
+  success. Scripts that ran `mm audit` and relied on it always succeeding will now stop
+  on a FAIL. Covered by `tests/test_audit_exit_code.py`.
 - Packaging for PyPI (not uploaded yet): SPDX `license = "Apache-2.0"` (setuptools>=77),
   a manual Trusted-Publishing workflow (`publish.yml`, TestPyPI first), and
   `docs/RELEASING.md`. README links are now absolute so they work on the PyPI page,

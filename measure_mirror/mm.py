@@ -4011,8 +4011,14 @@ def _cli() -> None:
             metric, baseline = args.metric, args.baseline
         if acc is None or n is None:
             p.error("audit requires --acc and --n (or --file)")
-        report(cid, audit(args.ledger, cid, reported_metric=metric,
-                          reported_acc=acc, n=n, baseline=baseline))
+        fs = audit(args.ledger, cid, reported_metric=metric,
+                   reported_acc=acc, n=n, baseline=baseline)
+        report(cid, fs)
+        # Exit 1 on any FAIL so `mm audit` can gate a shell script or CI step.
+        # It used to print "Overall: 🔴 FAIL" and exit 0, which a pipeline reads
+        # as success. WARN still exits 0: it asks for a look, not a stop.
+        if any(f.level == "FAIL" for f in fs):
+            sys.exit(1)
     elif args.cmd == "calibrate":
         report("Mirror Calibration", calibrate())
     elif args.cmd == "anchor":

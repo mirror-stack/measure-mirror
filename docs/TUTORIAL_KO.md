@@ -77,8 +77,9 @@ mm audit my_model --acc 0.72 --n 40
    🔴 [① pre-registration(min_n)] n=40 < registered min_n=200.
 ```
 
-참고: `mm audit`은 FAIL을 출력해도 지금은 종료 코드 0으로 끝납니다. CI를 실패시키려면 README의
-pytest 연동(`assert_clean`)을 쓰세요.
+종료 코드: `main`(다음 릴리스)에서는 `mm audit`이 FAIL이 하나라도 있으면 1, OK나 WARN이면 0으로
+끝나서 셸 스크립트나 CI 단계를 멈출 수 있습니다. 위에서 설치한 v0.41.2는 아직 FAIL이어도 0으로
+끝나므로, CI에는 README의 pytest 연동(`assert_clean`)을 쓰세요.
 
 ## 5. 골대 옮기기 시도
 

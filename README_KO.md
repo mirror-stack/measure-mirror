@@ -630,6 +630,34 @@ print(mm.badge(cert, fmt="svg"))      # 인증서 seal이 툴팁에 포함된 SV
 UNVERIFIED = 회색 · REJECTED = 빨강. SVG 버전은 인증서 seal과 anchor-hash
 접두사를 툴팁에 내장해, 배지가 어떤 봉인된 인증서를 렌더링한 것인지 추적 가능합니다.
 
+### 서명된 봉인 🔑 — 누가 봉인했나
+
+봉인은 **무엇을** 정했는지, 그리고 그게 결과보다 먼저였다는 것을 보여 줍니다. 하지만 그것만으로는
+**누가** 정했는지 보여 주지 못합니다. 쓰기 권한이 있으면 누구나 추가할 수 있기 때문입니다. 서명이
+그 부분을 채웁니다. action-mirror와 같은 Ed25519 키와 신뢰 키 파일 형식을 씁니다(SPEC §4 규칙 4).
+
+```bash
+pip install "measure-mirror[signing]"          # cryptography 추가. 코어는 그대로 표준 라이브러리만 씀
+mm keygen ~/.mm/alice.key                      # 공개 키 출력. 개인 키는 비밀로 보관
+mm register my_model --metric acc --pass 0.60 --kill-threshold 0.55 \
+   --sign-key ~/.mm/alice.key --signer alice   # 또는 MM_SIGN_KEY / MM_SIGNER 환경 변수(CI 등)
+
+echo "alice <공개 키 hex>" > trusted_keys.txt   # 원장을 고칠 수 있는 사람이 못 건드리는 곳에 보관
+mm verify-sig --trusted-keys trusted_keys.txt   # FAIL이면 종료 코드 1
+```
+
+`verify_signatures(ledger, trusted_keys)` (Python에서 `load_trusted_keys(path)`로 파일 읽기,
+MCP는 `mm_verify_signatures`)는 봉인을 다시 계산하고 그 봉인에 대한 서명을 확인합니다. 신뢰 키가
+있으면, `signer`에 등록되지 않은 키로 서명한 엔트리와, 등록된 키가 있는 `signer`인데 서명이 없는
+엔트리를 FAIL로 잡습니다(서명을 지워서 피해 갈 수 없음). `--require-signed`는 서명 없는 엔트리를
+모두 FAIL로 잡습니다. `register`, `retract`, `run`이 서명할 수 있습니다.
+
+증명하지 **않는** 것: 신뢰 키 파일이 없으면 각 엔트리 안의 키가 서명했다는 것뿐입니다. 원장을
+다시 쓰고 새 키로 다시 서명해도 통과합니다. 신뢰 키 파일이 있으면 등록된 키의 보유자가 서명했다는
+것까지이고, 그 사람들이 서로 독립적이라는 것(한 사람이 키를 여러 개 가질 수 있음)이나 내용이
+사실이라는 것은 아닙니다. 도난당한 키는 진짜 키와 똑같이 서명합니다. 서명 없는 기존 원장은 바뀌지
+않고 그대로 검증됩니다.
+
 ### 앵커(Anchor) ⎈
 
 ```bash

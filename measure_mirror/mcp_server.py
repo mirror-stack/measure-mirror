@@ -107,6 +107,15 @@ async def list_tools() -> list[types.Tool]:
                                        "later audit can aggregate its outcome; declaring none at all "
                                        "draws an INFO nudge.",
                                        "default": None},
+                    "sign_key":       {"type": "string", "description":
+                                       "Optional path to an Ed25519 private key (mm keygen) on the "
+                                       "server's machine. Signs the seal so mm_verify_signatures can "
+                                       "check who sealed it. Needs measure-mirror[signing].",
+                                       "default": None},
+                    "signer":         {"type": "string", "description":
+                                       "Optional label (no spaces) for who sealed; matched against "
+                                       "the trusted-keys file by mm_verify_signatures.",
+                                       "default": None},
                 },
                 "required": ["ledger_path", "claim_id", "metric"],
             },
@@ -273,6 +282,29 @@ async def list_tools() -> list[types.Tool]:
                     "claim_id":    {"type": "string", "description":
                                     "Claim identifier to lint (optional; omit to lint all)",
                                     "default": None},
+                },
+                "required": ["ledger_path"],
+            },
+        ),
+        types.Tool(
+            name="mm_verify_signatures",
+            description=(
+                "🔑 Check WHO sealed each entry: every entry with a pubkey must carry a valid "
+                "Ed25519 signature over its (recomputed) seal. Without trusted_keys_path this "
+                "only shows self-consistency — a rewritten ledger re-signed with a new key also "
+                "passes. With it, entries signed by an untrusted key, or unsigned entries whose "
+                "signer has a trusted key, FAIL. Needs measure-mirror[signing]."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "ledger_path":       {"type": "string", "description": "Path to the JSONL ledger file"},
+                    "trusted_keys_path": {"type": "string", "description":
+                                          "File of '<signer> <pubkey_hex>' lines ('*' = any signer). "
+                                          "Keep it outside the ledger's control.",
+                                          "default": None},
+                    "require_signed":    {"type": "boolean", "description": "FAIL every unsigned entry",
+                                          "default": False},
                 },
                 "required": ["ledger_path"],
             },
@@ -917,6 +949,8 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
                 anchor_line_source=arguments.get("anchor_line_source"),
                 known_confounds=arguments.get("known_confounds"),
                 pre_seal_checks=arguments.get("pre_seal_checks"),
+                sign_key=arguments.get("sign_key"),
+                signer=arguments.get("signer"),
             )
             kill_line = ""
             if entry.get("kill_threshold"):
@@ -994,6 +1028,15 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             findings = mm.prereg_lint(
                 arguments["ledger_path"],
                 arguments.get("claim_id"),
+            )
+            result = _findings_to_text(findings)
+
+        elif name == "mm_verify_signatures":
+            tk_path = arguments.get("trusted_keys_path")
+            findings = mm.verify_signatures(
+                arguments["ledger_path"],
+                mm.load_trusted_keys(tk_path) if tk_path else None,
+                require_signed=bool(arguments.get("require_signed", False)),
             )
             result = _findings_to_text(findings)
 

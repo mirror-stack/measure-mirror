@@ -34,6 +34,8 @@ dependencies = []
 test  = ["pytest>=7", "hypothesis>=6"]
 mcp   = ["mcp>=1.0.0"]
 judge = ["openai>=1.0", "anthropic>=0.20"]
+# Ed25519 signatures on seals (mm keygen / --sign-key / mm verify-sig).
+signing = ["cryptography>=41"]
 # Layer B only. Layer A (subspace_claim_check in mm.py) stays stdlib-only.
 subspace = ["numpy>=1.21"]
 

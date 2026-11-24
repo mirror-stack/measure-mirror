@@ -261,7 +261,8 @@ def _ledger_lock(ledger_path: str, timeout: float = _LOCK_TIMEOUT_S):
         os.close(fd)
 
 
-def _append_sealed(ledger_path: str, entry: dict) -> dict:
+def _append_sealed(ledger_path: str, entry: dict, *,
+                   sign_key: str | None = None, signer: str | None = None) -> dict:
     """Link ``entry`` to the current head, seal it and append it — atomically w.r.t.
     other writers that use this function.
 
@@ -269,13 +270,28 @@ def _append_sealed(ledger_path: str, entry: dict) -> dict:
     ``prev_seal`` key as a placeholder; its value is overwritten in place, so the
     key keeps its position in the written line (line bytes stay as before this helper;
     only the seal computation canonicalizes, SPEC §4.1).
+
+    Identity (optional, SPEC §4 rule 4): ``signer`` adds a self-declared ``signer`` label
+    to the sealed body. ``sign_key`` (path to an Ed25519 private key, ``mm keygen``) adds
+    the matching ``pubkey`` to the sealed body and, after sealing, a ``sig`` over the seal
+    string. Without either, the entry is byte-for-byte what it was before this option.
     """
+    if signer is not None:
+        if not isinstance(signer, str) or not signer.strip() or any(c.isspace() for c in signer):
+            raise ValueError(f"signer must be a non-empty label without spaces: {signer!r}")
+        entry["signer"] = signer
+    if sign_key is not None:
+        from . import identity
+        entry["pubkey"] = identity.public_hex(sign_key)   # sealed: part of the body
     with _ledger_lock(ledger_path):
         entry["prev_seal"] = _get_last_seal(ledger_path)
         entry.pop("seal", None)
+        entry.pop("sig", None)
         entry["seal"] = hashlib.sha256(
             json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
         ).hexdigest()
+        if sign_key is not None:
+            entry["sig"] = identity.sign(sign_key, entry["seal"])   # not sealed (SPEC §4 r1)
         line = json.dumps(entry, ensure_ascii=False) + "\n"
         with open(ledger_path, "a", encoding="utf-8") as f:
             f.write(line)
@@ -294,7 +310,9 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
                 anchor_cell: str | None = None,
                 anchor_line_source: str | None = None,
                 known_confounds: list[str] | None = None,
-                pre_seal_checks: list[str | dict] | None = None) -> dict:
+                pre_seal_checks: list[str | dict] | None = None,
+                sign_key: str | None = None,
+                signer: str | None = None) -> dict:
     """Seal evaluation criteria BEFORE seeing results.
 
     Each entry is cryptographically linked to the previous one (chain hash).
@@ -405,7 +423,7 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
                 raise ValueError(
                     f"pre_seal_checks entry must be a check name or an object: {c!r}")
         entry["pre_seal_checks"] = list(pre_seal_checks)
-    return _append_sealed(ledger_path, entry)
+    return _append_sealed(ledger_path, entry, sign_key=sign_key, signer=signer)
 
 
 def _load_prereg(ledger_path: str, claim_id: str) -> dict | None:
@@ -773,7 +791,11 @@ def _verify_seal(entry: dict) -> bool:
     Seal recomputation only — chain linkage (incl. the mandatory prev_seal per
     SPEC §4 rule 3) is enforced separately in verify_chain / linkage_check."""
     stored = entry.get("seal", "")
-    check = {k: v for k, v in entry.items() if k != "seal"}
+    # SPEC §4 rule 1: `seal` and `sig` are not part of the sealed body. (Before signing
+    # existed here, only `seal` was dropped — so a signed ledger, e.g. action-mirror's,
+    # failed this check. No measure-mirror entry carried `sig` before, so nothing that
+    # verified before stops verifying.)
+    check = {k: v for k, v in entry.items() if k not in ("seal", "sig")}
     full = hashlib.sha256(
         json.dumps(check, sort_keys=True, ensure_ascii=False).encode()
     ).hexdigest()
@@ -842,6 +864,139 @@ def verify_chain(ledger_path: str) -> list[Finding]:
         return [Finding("① chain-integrity", "OK",
             f"Chain intact — {len(entries)} entries verified.")]
     return findings
+
+
+def load_trusted_keys(path: str) -> dict[str, set[str]]:
+    """Read a trusted-keys file: one key per line, ``<signer> <pubkey_hex>``.
+
+    Same format as action-mirror's ``--trusted-keys`` file (there the first column is the
+    entry's ``agent``; here it is the entry's ``signer``). ``*`` trusts a key for any
+    signer. Blank lines and ``#`` comments are ignored. Keep this file OUTSIDE the
+    ledger's control: its value is that whoever rewrites the ledger cannot also rewrite
+    which keys you expect.
+    """
+    keys: dict[str, set[str]] = {}
+    with open(path, encoding="utf-8") as f:
+        for n, line in enumerate(f, 1):
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) != 2:
+                raise ValueError(f"{path}:{n}: expected '<signer> <pubkey_hex>', got {line!r}")
+            who, key = parts
+            try:
+                if len(bytes.fromhex(key)) != 32:
+                    raise ValueError
+            except ValueError:
+                raise ValueError(f"{path}:{n}: not a 32-byte Ed25519 public key in hex: {key!r}")
+            keys.setdefault(who, set()).add(key.lower())
+    return keys
+
+
+def verify_signatures(ledger_path: str,
+                      trusted_keys: dict[str, set[str]] | None = None, *,
+                      require_signed: bool = False) -> list[Finding]:
+    """Check WHO sealed each entry (SPEC §4 rule 4). Needs the [signing] extra.
+
+    Every entry that carries a ``pubkey`` must carry a valid Ed25519 ``sig`` over its
+    seal, and the seal is recomputed from the content first, so the signature vouches for
+    what is in the entry now, not for a stale seal.
+
+    Without ``trusted_keys`` this only shows each signed entry is self-consistent: the key
+    IN the entry signed it. Whoever rewrites a ledger can re-sign it with a fresh key, so
+    that alone says nothing about who sealed. With ``trusted_keys`` (signer -> set of
+    pubkey hex, ``"*"`` for any signer; see ``load_trusted_keys``):
+
+      - a signed entry whose key is not trusted for its ``signer`` FAILs;
+      - an UNSIGNED entry whose ``signer`` has trusted keys FAILs — otherwise an
+        impersonator would simply leave the signature off.
+
+    ``require_signed`` additionally FAILs every unsigned entry (use it for ledgers that
+    were signed from the first entry; older unsigned entries would otherwise pass).
+    Signatures prove attribution to a key, not independence: one operator may hold many keys.
+    """
+    name = "🔑 identity"
+    if not os.path.exists(ledger_path):
+        return [Finding(name, "OK", "Empty ledger.")]
+    entries = []
+    with open(ledger_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                e = json.loads(line)
+            except json.JSONDecodeError:
+                return [Finding(name, "FAIL", "Malformed JSON in ledger — run verify_chain.")]
+            entries.append(e if isinstance(e, dict) else {})
+    signed = [i for i, e in enumerate(entries, 1) if e.get("pubkey")]
+    findings: list[Finding] = []
+
+    problems = []
+    if require_signed:
+        unsigned = [i for i, e in enumerate(entries, 1) if not e.get("pubkey")]
+        if unsigned:
+            problems.append(f"unsigned entr{'y' if len(unsigned) == 1 else 'ies'} {unsigned} "
+                            "(signatures are required)")
+    if trusted_keys is not None:
+        anyone = {k.lower() for k in trusted_keys.get("*", set())}
+        untrusted, missing = [], []
+        for i, e in enumerate(entries, 1):
+            who = e.get("signer")
+            allowed = {k.lower() for k in trusted_keys.get(who, set())} | anyone
+            if e.get("pubkey"):
+                if str(e["pubkey"]).lower() not in allowed:
+                    untrusted.append(i)
+            elif who is not None and who in trusted_keys and not require_signed:
+                missing.append(i)
+        if untrusted:
+            problems.append(f"signed by a key not trusted for its signer at entr"
+                            f"{'y' if len(untrusted) == 1 else 'ies'} {untrusted}")
+        if missing:
+            problems.append(f"unsigned although the signer has a trusted key at entr"
+                            f"{'y' if len(missing) == 1 else 'ies'} {missing}")
+    if problems:
+        findings.append(Finding(name, "FAIL", "; ".join(problems) + "."))
+
+    if not signed:
+        return findings or [Finding(name, "OK",
+                                    "No signed entries — who sealed them is not recorded.")]
+    from . import identity
+    if not identity.available():
+        return findings + [Finding(name, "WARN",
+                                   f"{len(signed)} signed entries present but cryptography is "
+                                   "not installed — pip install measure-mirror[signing] to verify.")]
+    bad = []
+    for i, e in enumerate(entries, 1):
+        if not e.get("pubkey"):
+            continue
+        body = {k: v for k, v in e.items() if k not in ("seal", "sig")}
+        full = hashlib.sha256(
+            json.dumps(body, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        # SPEC §4 rule 4: the signature covers the seal string as stored (16-hex legacy form
+        # included) — but only if that stored seal still matches the content.
+        stored = str(e.get("seal", ""))
+        if not _seal_matches(stored, full) or not e.get("sig") \
+                or not identity.verify(str(e["pubkey"]), stored, str(e["sig"])):
+            bad.append(i)
+    if bad:
+        return findings + [Finding(name, "FAIL",
+                                   f"Invalid signature at entr{'y' if len(bad) == 1 else 'ies'} "
+                                   f"{bad} — the content or the signature was changed, or the "
+                                   "signature was made with another key.")]
+    if findings:
+        return findings
+    keys = {str(entries[i - 1]["pubkey"])[:12] for i in signed}
+    if trusted_keys is None:
+        return [Finding(name, "OK",
+                        f"{len(signed)} signed entries are self-consistent across {len(keys)} "
+                        "key(s). Keys are NOT pinned: a rewritten ledger re-signed with a new key "
+                        "also passes. Pass trusted keys (CLI --trusted-keys) to check who sealed.")]
+    return [Finding(name, "OK",
+                    f"{len(signed)} signed entries verified against trusted keys "
+                    f"({len(keys)} key(s)). Attribution holds for those keys; independence is "
+                    "NOT proven — one operator may hold many keys.")]
 
 
 def linkage_check(path: str) -> tuple[bool, str, list | None]:
@@ -1884,7 +2039,8 @@ def _load_dependency_graph(ledger_path: str) -> tuple[dict[str, list[str]], set[
     return deps, retracted
 
 
-def retract(ledger_path: str, claim_id: str, reason: str) -> dict:
+def retract(ledger_path: str, claim_id: str, reason: str, *,
+            sign_key: str | None = None, signer: str | None = None) -> dict:
     """Append a chain-linked retraction entry to the ledger.
 
     Marks claim_id as retracted. Any claim that depends (directly or transitively)
@@ -1899,7 +2055,7 @@ def retract(ledger_path: str, claim_id: str, reason: str) -> dict:
         "claim_id": claim_id,
         "reason":   reason,
     }
-    return _append_sealed(ledger_path, entry)
+    return _append_sealed(ledger_path, entry, sign_key=sign_key, signer=signer)
 
 
 def cascade_check(ledger_path: str, claim_id: str) -> Finding:
@@ -3821,7 +3977,8 @@ def badge(cert: dict, *, fmt: str = "markdown") -> str:
 
 
 def witness(ledger_path: str, claim_id: str, command: list[str], *,
-            timeout: int | None = None) -> dict:
+            timeout: int | None = None,
+            sign_key: str | None = None, signer: str | None = None) -> dict:
     """Execute command and seal a tamper-evident witness record in the ledger.
 
     Runs the command as a subprocess, captures stdout/stderr/returncode, hashes
@@ -3867,7 +4024,7 @@ def witness(ledger_path: str, claim_id: str, command: list[str], *,
         "run_status":  run_status,
         "output_hash": output_hash,
     }
-    return _append_sealed(ledger_path, entry)
+    return _append_sealed(ledger_path, entry, sign_key=sign_key, signer=signer)
 
 
 # The subcommands that append to the ledger — the only ones that can bring a file into
@@ -3918,7 +4075,7 @@ def _auto(name: str, ledger: str = "mm_ledger.jsonl") -> None:
 def _cli() -> None:
     import argparse, sys
     _SUBCMDS = {"register", "audit", "calibrate", "run", "anchor", "retract",
-                "negative", "judge", "certify", "verify"}
+                "negative", "judge", "certify", "verify", "keygen", "verify-sig"}
     if len(sys.argv) == 2 and sys.argv[1] not in _SUBCMDS \
             and not sys.argv[1].startswith("-"):
         _auto(sys.argv[1]); return
@@ -4017,6 +4174,29 @@ def _cli() -> None:
     rn.add_argument("--no-calibrate", dest="no_calibrate", action="store_true",
                     help="Skip self-calibration before running the command")
 
+    kg = sub.add_parser("keygen",
+                        help="Create an Ed25519 key for signing seals (needs measure-mirror[signing])")
+    kg.add_argument("path", help="Where to write the PRIVATE key (hex). Keep it secret.")
+
+    vs = sub.add_parser("verify-sig",
+                        help="Check who sealed each entry: Ed25519 signatures, optional trusted keys")
+    vs.add_argument("--trusted-keys", default=None,
+                    help="File of '<signer> <pubkey_hex>' lines ('*' = any signer). Signed entries "
+                         "must use a key trusted for their signer; listed signers must sign.")
+    vs.add_argument("--require-signed", action="store_true",
+                    help="FAIL every unsigned entry")
+
+    # Signing options for the commands that append a seal. Defaults come from the
+    # environment so a CI job can sign every seal without repeating the flags.
+    for _sub in (r, rt, rn):
+        _sub.add_argument("--sign-key", dest="sign_key",
+                          default=os.environ.get("MM_SIGN_KEY") or None,
+                          help="Ed25519 private key (from `mm keygen`) to sign the seal with "
+                               "[env MM_SIGN_KEY]")
+        _sub.add_argument("--signer", default=os.environ.get("MM_SIGNER") or None,
+                          help="Label for who sealed (no spaces), checked against "
+                               "--trusted-keys by `mm verify-sig` [env MM_SIGNER]")
+
     # Accept `--new-ledger` on either side of the subcommand. It is the one flag a
     # first-time user is forced to type, and argparse puts top-level options before the
     # subcommand, so `mm register x --new-ledger` would otherwise fail with
@@ -4070,7 +4250,8 @@ def _cli() -> None:
                         pass_threshold=args.pass_threshold,
                         kill_condition=args.kill_condition,
                         kill_threshold=kill_thresh,
-                        depends_on=args.depends_on)
+                        depends_on=args.depends_on,
+                        sign_key=args.sign_key, signer=args.signer)
         kill_note = ""
         if kill_thresh:
             op = "<" if args.kill_direction == "below" else ">"
@@ -4079,6 +4260,9 @@ def _cli() -> None:
             kill_note = f"  kill(text)={args.kill_condition!r}"
         print(f"🔒 Sealed: {args.claim_id}  metric={args.metric} "
               f"min_n={args.min_n} baseline={args.baseline}{kill_note}  seal={e['seal']}")
+        if e.get("pubkey"):
+            print(f"🔑 Signed by key {e['pubkey']}"
+                  + (f" (signer={e['signer']})" if e.get("signer") else ""))
     elif args.cmd == "audit":
         if args.file:
             d = json.load(open(args.file, encoding="utf-8"))
@@ -4105,7 +4289,8 @@ def _cli() -> None:
         else:
             print(json.dumps(a, ensure_ascii=False))
     elif args.cmd == "retract":
-        e = retract(args.ledger, args.claim_id, args.reason)
+        e = retract(args.ledger, args.claim_id, args.reason,
+                    sign_key=args.sign_key, signer=args.signer)
         print(f"🚫 Retracted: {args.claim_id}  reason={args.reason!r}  seal={e['seal']}")
     elif args.cmd == "negative":
         fs = [negative_audit(args.ledger, angles=args.angles,
@@ -4170,6 +4355,25 @@ def _cli() -> None:
         # printed for a reader to judge, the same way WARN is.
         if c["verdict"] == "REJECTED":
             sys.exit(1)
+    elif args.cmd == "keygen":
+        from . import identity
+        if not identity.available():
+            print("mm keygen needs the optional dependency: pip install measure-mirror[signing]",
+                  file=sys.stderr)
+            raise SystemExit(2)
+        if os.path.exists(args.path):
+            print(f"mm keygen: {args.path} already exists — not overwriting a key.",
+                  file=sys.stderr)
+            raise SystemExit(2)
+        pub = identity.generate(args.path)
+        print(f"🔑 Private key: {args.path}  (keep secret)")
+        print(f"   Public key:  {pub}")
+        print(f"   Trusted-keys line: <signer> {pub}")
+    elif args.cmd == "verify-sig":
+        tk = load_trusted_keys(args.trusted_keys) if args.trusted_keys else None
+        fs = verify_signatures(args.ledger, tk, require_signed=args.require_signed)
+        report("Signed identity", fs)
+        _exit_on_fail(fs)
     elif args.cmd == "run":
         cmd = [c for c in (args.command or []) if c != "--"]
         if not cmd:
@@ -4180,7 +4384,8 @@ def _cli() -> None:
             if any(f.level == "FAIL" for f in cal):
                 print("⚠️  Calibration failed — "
                       "witness run continues but verify your installation.")
-        w = witness(args.ledger, args.claim_id, cmd, timeout=args.timeout)
+        w = witness(args.ledger, args.claim_id, cmd, timeout=args.timeout,
+                    sign_key=args.sign_key, signer=args.signer)
         print(f"\n🎬 Witnessed: {args.claim_id}")
         print(f"   Command:     {' '.join(w['command'])}")
         print(f"   Started:     {w['ts_start']}")

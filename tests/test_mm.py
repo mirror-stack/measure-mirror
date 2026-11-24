@@ -1656,3 +1656,13 @@ def test_subspace_claim_check_smoke():
     f = mm.subspace_claim_check({"anchor": {"code_path": "frozen", "tol": 1e-9,
                                             "n_seeds": 10, "guard_seeds": 5}})
     assert [x for x in f if x.probe.endswith("energy-not-matched")][0].level == "N/A"
+
+
+def test_verify_signatures_unsigned_ledger(tmp_path):
+    """Stdlib-only path: unsigned entries say who sealed is not recorded; signing tests
+    (need the [signing] extra) live in tests/test_signing.py."""
+    ledger = str(tmp_path / "l.jsonl")
+    mm.preregister(ledger, "c1", metric="acc", min_n=200, baseline=0.5, pass_threshold=0.6)
+    f = mm.verify_signatures(ledger)
+    assert f[0].level == "OK" and "not recorded" in f[0].msg
+    assert mm.verify_signatures(ledger, require_signed=True)[0].level == "FAIL"

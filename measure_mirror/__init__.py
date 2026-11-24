@@ -12,6 +12,7 @@ numpy). 이 단서를 떼고 "의존성0"만 말하는 것이 도감 항목
 from .mm import (
     # ledger + utilities
     preregister, verify_chain, retract, anchor, calibrate, witness,
+    verify_signatures, load_trusted_keys,
     certificate, badge,
     # audits — three tiers: verify (full/group) · umbrellas · individual probes
     verify, audit, continuous_audit, full_audit, GROUPS, group_of,
@@ -33,6 +34,7 @@ from .mm import (
 
 __all__ = [
     "preregister", "verify_chain", "retract", "anchor", "calibrate", "witness",
+    "verify_signatures", "load_trusted_keys",
     "certificate", "badge",
     "verify", "audit", "continuous_audit", "full_audit", "GROUPS", "group_of",
     "baseline_fairness", "gaming_check", "leakage_check", "multiseed_check",

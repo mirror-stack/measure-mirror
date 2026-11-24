@@ -697,6 +697,34 @@ UNVERIFIED = grey · REJECTED = red. The SVG variant embeds the certificate seal
 and anchor-hash prefix in its tooltip, making the badge traceable back to the
 exact sealed certificate it renders.
 
+### Signed seals 🔑 — who sealed it
+
+A seal shows **what** was fixed and that it came before the result. On its own it does not
+show **who** fixed it: anyone with write access can append. Signing adds that, using the same
+Ed25519 keys and trusted-keys file format as action-mirror (SPEC §4 rule 4).
+
+```bash
+pip install "measure-mirror[signing]"          # adds `cryptography`; the core stays stdlib-only
+mm keygen ~/.mm/alice.key                      # prints the public key; keep the private key secret
+mm register my_model --metric acc --pass 0.60 --kill-threshold 0.55 \
+   --sign-key ~/.mm/alice.key --signer alice   # or set MM_SIGN_KEY / MM_SIGNER (e.g. in CI)
+
+echo "alice <public key hex>" > trusted_keys.txt   # keep this file outside the ledger's control
+mm verify-sig --trusted-keys trusted_keys.txt   # exit 1 on FAIL
+```
+
+`verify_signatures(ledger, trusted_keys)` (Python: `load_trusted_keys(path)` reads the file;
+MCP: `mm_verify_signatures`) recomputes each seal and checks the signature over it. With
+trusted keys it FAILs an entry signed by a key not listed for its `signer`, and an unsigned
+entry whose `signer` has a listed key (stripping the signature is not a way around it).
+`--require-signed` FAILs every unsigned entry. `register`, `retract` and `run` can sign.
+
+What it does **not** prove: without a trusted-keys file, only that the key inside each entry
+signed it — a rewritten ledger re-signed with a new key also passes. With one, that the holder
+of a listed key signed, not that they are independent (one person can hold many keys) and not
+that the content is true. A stolen key signs like the real one. Unsigned ledgers are unchanged
+and still verify.
+
 ### Anchor ⎈
 
 ```bash

@@ -61,7 +61,7 @@ Design:
   - Ledger = append-only JSONL + chain hash + first-write wins + SHA-256 seal.
 """
 from __future__ import annotations
-import json, math, time, hashlib, os, random, re, statistics
+import contextlib, json, math, time, hashlib, os, random, re, statistics
 from dataclasses import dataclass
 
 
@@ -196,6 +196,92 @@ def _get_last_seal(ledger_path: str, _chunk: int = 8192) -> str:
     return "genesis"
 
 
+# How long an appender waits for another writer before giving up. An append holds the
+# lock for one tail read + one line write (well under a millisecond on a local disk),
+# so reaching this means a writer is stuck, not that the ledger is busy.
+_LOCK_TIMEOUT_S = 60.0
+
+
+@contextlib.contextmanager
+def _ledger_lock(ledger_path: str, timeout: float = _LOCK_TIMEOUT_S):
+    """Hold an exclusive OS lock on ``<ledger>.lock`` for one read-head-then-append.
+
+    Every append reads the last seal and then writes a line that points at it. Without
+    a lock, two processes can read the SAME head and both append after it — the chain
+    forks, and verify_chain() then reports the honest second line as "deleted/inserted".
+    Reproduced 2026-11-24: 4 processes x 50 preregister() calls on one ledger gave
+    109-150 chain-break FAILs in each of 3 runs. This ledger IS appended by several
+    processes (cron jobs, sibling agents — see _get_last_seal), so this is not a
+    theoretical race.
+
+    A sidecar file, not the ledger itself: on Windows a byte-range lock is mandatory and
+    would make concurrent READERS of the ledger fail; locking a separate file blocks only
+    other writers. The lock file is never deleted (deleting it would let a waiting writer
+    lock a file that a newcomer has already replaced). The OS releases the lock if the
+    holder dies. Advisory only: a writer that bypasses this module is not stopped, and
+    some network filesystems ignore the lock.
+    """
+    fd = os.open(ledger_path + ".lock", os.O_CREAT | os.O_RDWR, 0o644)
+    deadline = time.monotonic() + timeout
+    try:
+        if os.name == "nt":
+            import msvcrt
+            while True:
+                os.lseek(fd, 0, os.SEEK_SET)
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(
+                            f"ledger {ledger_path!r} is locked by another writer") from None
+                    time.sleep(0.005)
+        else:
+            import fcntl
+            while True:
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(
+                            f"ledger {ledger_path!r} is locked by another writer") from None
+                    time.sleep(0.005)
+        try:
+            yield
+        finally:
+            if os.name == "nt":
+                import msvcrt
+                os.lseek(fd, 0, os.SEEK_SET)
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
+def _append_sealed(ledger_path: str, entry: dict) -> dict:
+    """Link ``entry`` to the current head, seal it and append it — atomically w.r.t.
+    other writers that use this function.
+
+    The ONLY way this module appends a chained entry. ``entry`` may already hold a
+    ``prev_seal`` key as a placeholder; its value is overwritten in place, so the
+    key keeps its position in the written line (line bytes stay as before this helper;
+    only the seal computation canonicalizes, SPEC §4.1).
+    """
+    with _ledger_lock(ledger_path):
+        entry["prev_seal"] = _get_last_seal(ledger_path)
+        entry.pop("seal", None)
+        entry["seal"] = hashlib.sha256(
+            json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
+        line = json.dumps(entry, ensure_ascii=False) + "\n"
+        with open(ledger_path, "a", encoding="utf-8") as f:
+            f.write(line)
+    return entry
+
+
 def preregister(ledger_path: str, claim_id: str, *, metric: str,
                 min_n: int, baseline: float, pass_threshold: float,
                 kill_condition: str | None = None,
@@ -254,7 +340,6 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
     detected by verify_chain(). Complete ledger replacement is NOT caught
     here — use git commit anchoring for that guarantee.
     """
-    prev_seal = _get_last_seal(ledger_path)
     entry: dict = {
         "ts": _utc_now(),
         "claim_id": claim_id,
@@ -262,7 +347,7 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
         "min_n": min_n,
         "baseline": baseline,
         "pass_threshold": pass_threshold,
-        "prev_seal": prev_seal,
+        "prev_seal": None,   # placeholder — set under the ledger lock in _append_sealed
     }
     if kill_condition is not None:
         entry["kill_condition"] = kill_condition
@@ -320,12 +405,7 @@ def preregister(ledger_path: str, claim_id: str, *, metric: str,
                 raise ValueError(
                     f"pre_seal_checks entry must be a check name or an object: {c!r}")
         entry["pre_seal_checks"] = list(pre_seal_checks)
-    entry["seal"] = hashlib.sha256(
-        json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
-    ).hexdigest()
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    return entry
+    return _append_sealed(ledger_path, entry)
 
 
 def _load_prereg(ledger_path: str, claim_id: str) -> dict | None:
@@ -1819,15 +1899,7 @@ def retract(ledger_path: str, claim_id: str, reason: str) -> dict:
         "claim_id": claim_id,
         "reason":   reason,
     }
-    prev_seal = _get_last_seal(ledger_path)
-    entry["prev_seal"] = prev_seal
-    entry["seal"] = hashlib.sha256(
-        json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
-    ).hexdigest()
-
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    return entry
+    return _append_sealed(ledger_path, entry)
 
 
 def cascade_check(ledger_path: str, claim_id: str) -> Finding:
@@ -3795,15 +3867,7 @@ def witness(ledger_path: str, claim_id: str, command: list[str], *,
         "run_status":  run_status,
         "output_hash": output_hash,
     }
-    prev_seal = _get_last_seal(ledger_path)
-    entry["prev_seal"] = prev_seal
-    entry["seal"] = hashlib.sha256(
-        json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
-    ).hexdigest()
-
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    return entry
+    return _append_sealed(ledger_path, entry)
 
 
 # The subcommands that append to the ledger — the only ones that can bring a file into

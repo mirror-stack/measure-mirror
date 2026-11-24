@@ -113,14 +113,7 @@ def _parse_rating(text: str) -> int:
 # Ledger helpers (chain-linked judge_run entry)
 # ─────────────────────────────────────────────────────────────
 def _seal_judge_run(ledger_path: str, entry: dict) -> dict:
-    prev_seal = mm._get_last_seal(ledger_path)
-    entry["prev_seal"] = prev_seal
-    entry["seal"] = hashlib.sha256(
-        json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
-    ).hexdigest()
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    return entry
+    return mm._append_sealed(ledger_path, entry)
 
 
 # ─────────────────────────────────────────────────────────────

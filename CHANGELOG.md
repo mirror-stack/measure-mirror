@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+- **Signed seals (who sealed it):** `mm keygen`, `--sign-key` / `--signer` on `register`,
+  `retract` and `run` (or `MM_SIGN_KEY` / `MM_SIGNER`), and `mm verify-sig
+  [--trusted-keys FILE] [--require-signed]` (Python `verify_signatures`, `load_trusted_keys`;
+  MCP `mm_verify_signatures`, and `sign_key` / `signer` on `mm_register`). Ed25519 over the
+  stored seal string, as SPEC §4 rule 4 already defined; same key and trusted-keys file
+  format as action-mirror. Optional extra `measure-mirror[signing]` (`cryptography`); the
+  core stays stdlib-only. Unsigned entries are written exactly as before. Covered by
+  `tests/test_signing.py`.
+- **Ledger (SPEC §4 rule 1):** `verify_chain()` now leaves `sig` out of the recomputed
+  seal, as the SPEC and `spec/reference_verifier.py` already did. It used to drop only
+  `seal`, so any signed ledger (action-mirror's, for one) failed it. No measure-mirror
+  entry carried `sig` before, so nothing that verified before stops verifying.
 - **CLI:** `mm verify`, `mm judge`, `mm negative`, `mm calibrate` and the `mm <name>`
   shortcut now exit 1 when any probe FAILs, like `mm audit`; `mm certify` exits 1 when the
   verdict is REJECTED (UNVERIFIED and CERTIFIED-WITH-WARNINGS still exit 0). They all used

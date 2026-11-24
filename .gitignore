@@ -13,6 +13,8 @@ CLAUDE.md
 *_ledger.jsonl
 mm_ledger.jsonl
 result.json
+# 원장 쓰기 잠금 파일 (mm._ledger_lock 이 원장 옆에 만들고 지우지 않음)
+*.jsonl.lock
 my_model.json
 
 # 홍보 초안은 절대 공개 금지 (로컬 전용)

@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+- **Ledger:** concurrent appenders no longer fork the chain. Every chained append
+  (`preregister`, `retract`, `witness`, judge runs) now reads the head seal and writes
+  its line under an exclusive OS lock on a sidecar `<ledger>.lock` file. Before, two
+  processes could read the same head and both append after it, and `verify_chain()`
+  then reported the honest second line as deleted/inserted (reproduced: 4 processes x
+  50 appends gave 109-150 chain-break FAILs per run). The lock file stays next to the
+  ledger and is never deleted; it is advisory, so writers that bypass this package are
+  not covered. Seal format and line layout are unchanged. Covered by
+  `tests/test_concurrent_append.py`.
 - **CLI:** `mm audit` now exits with status 1 when any probe FAILs (OK and WARN still
   exit 0). It used to print `Overall: 🔴 FAIL` and exit 0, which a CI step reads as
   success. Scripts that ran `mm audit` and relied on it always succeeding will now stop

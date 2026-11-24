@@ -29,11 +29,11 @@ TOL, DELTA = 0.05, 0.005
 
 
 def _result() -> dict:
-    return json.loads((EVAL / "sealed_result.json").read_text())
+    return json.loads((EVAL / "sealed_result.json").read_text(encoding="utf-8"))
 
 
 def test_results_md_is_a_faithful_render_of_the_sealed_json():
-    assert (EVAL / "RESULTS.md").read_text() == make_vacuous_results.render(
+    assert (EVAL / "RESULTS.md").read_text(encoding="utf-8") == make_vacuous_results.render(
         _result()), (
         "RESULTS.md drifted from sealed_result.json — re-run "
         "eval/subspace_vacuous_real/make_results.py rather than editing "
@@ -97,7 +97,7 @@ def test_judged_seeds_are_disjoint_from_the_burned_blocks():
 
 
 def test_results_page_keeps_the_invalid_attempt_and_the_scope():
-    md = (EVAL / "RESULTS.md").read_text()
+    md = (EVAL / "RESULTS.md").read_text(encoding="utf-8")
     assert "INVALID" in md and "17c36ad6" in md          # v1 kept, not hidden
     assert "consistent forgery" in md                    # standing hole stated
     assert "Synthetic isotropic Gaussians only" in md

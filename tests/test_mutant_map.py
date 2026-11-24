@@ -78,7 +78,7 @@ def test_dev_home_reproduces_the_frozen_expectation_table():
 
 
 def test_sealed_map_is_internally_consistent():
-    d = json.loads((EVAL / "sealed_map.json").read_text())
+    d = json.loads((EVAL / "sealed_map.json").read_text(encoding="utf-8"))
     assert d["verdict"] == "PASS"
     assert d["controls"]["all_ok"]
     p = d["primary"]

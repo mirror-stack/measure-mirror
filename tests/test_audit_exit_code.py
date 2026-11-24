@@ -7,7 +7,7 @@ CLI = "import sys; from measure_mirror.mm import _cli; sys.argv[0] = 'mm'; _cli(
 
 def mm(cwd, *args):
     return subprocess.run([sys.executable, "-c", CLI, *args], cwd=cwd,
-                          capture_output=True, text=True)
+                          capture_output=True, encoding="utf-8")
 
 
 def test_audit_exit_status(tmp_path):

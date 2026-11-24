@@ -408,14 +408,14 @@ def test_core_import_does_not_pull_in_numpy():
         "print('OK')\n"
     )
     r = subprocess.run([sys.executable, "-c", code], cwd=REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, encoding="utf-8")
     assert r.returncode == 0 and "OK" in r.stdout, r.stderr
 
 
 def test_advertising_states_the_scope_of_the_stdlib_claim():
     """Regression guard for catalog/self-catch/zero-dep-scope-overgeneralize.md
     — the entry that records this README overclaiming its own dependencies."""
-    readme = (REPO / "README.md").read_text()
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
     assert 'pip install -e ".[subspace]"' in readme
     assert "Stdlib-only describes the core and every layer-A auditor" in readme
     assert "zero-dep-scope-overgeneralize" in readme
@@ -430,18 +430,18 @@ def test_advertising_states_the_scope_of_the_stdlib_claim():
     badge = "badge/core%20deps-zero"
     assert badge in readme
 
-    ko = (REPO / "README_KO.md").read_text()
+    ko = (REPO / "README_KO.md").read_text(encoding="utf-8")
     assert badge in ko
     assert 'pip install -e ".[subspace]"' in ko
     assert "stdlib 전용인 것은 코어와 A층" in ko
     assert "zero-dep-scope-overgeneralize" in ko
     assert "- **외부 의존성 없음**" not in ko
 
-    init = (REPO / "measure_mirror" / "__init__.py").read_text()
+    init = (REPO / "measure_mirror" / "__init__.py").read_text(encoding="utf-8")
     assert "의존성0인 것은 이 코어와 A층 감사기들뿐이다" in init
 
-    pyproject = (REPO / "pyproject.toml").read_text()
+    pyproject = (REPO / "pyproject.toml").read_text(encoding="utf-8")
     assert 'subspace = ["numpy>=1.21"]' in pyproject
 
-    doc = (REPO / "measure_mirror" / "subspace.py").read_text()
+    doc = (REPO / "measure_mirror" / "subspace.py").read_text(encoding="utf-8")
     assert "This module is layer B and requires numpy" in doc

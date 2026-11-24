@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- **Non-UTF-8 consoles (e.g. Korean Windows, cp949):** `stack/verify_all.py` now asks `am`
+  for UTF-8 output and reads it as UTF-8; it used to decode with the console codepage,
+  fail on the emoji and lose `am`'s output. `stack/verify_self.py` and the `eval/` scripts
+  read their UTF-8 files explicitly as UTF-8. The test suite does the same for every
+  subprocess and file it reads (`tests/conftest.py` sets `PYTHONIOENCODING=utf-8` for
+  children); 40 tests failed on Korean Windows before this.
 - **Ledger:** concurrent appenders no longer fork the chain. Every chained append
   (`preregister`, `retract`, `witness`, judge runs) now reads the head seal and writes
   its line under an exclusive OS lock on a sidecar `<ledger>.lock` file. Before, two

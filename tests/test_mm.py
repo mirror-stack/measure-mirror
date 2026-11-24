@@ -239,10 +239,10 @@ def test_seal_tamper_detected(tmp_path):
     """Direct ledger file modification must trigger seal-tamper FAIL."""
     ledger = str(tmp_path / "l.jsonl")
     mm.preregister(ledger, "exp2", metric="acc", min_n=200, baseline=0.5, pass_threshold=0.6)
-    with open(ledger) as f:
+    with open(ledger, encoding="utf-8") as f:
         entry = json.loads(f.read())
     entry["baseline"] = 0.1  # tamper
-    with open(ledger, "w") as f:
+    with open(ledger, "w", encoding="utf-8") as f:
         f.write(json.dumps(entry))
     findings = mm.audit(ledger, "exp2", reported_metric="acc", reported_acc=0.72, n=500)
     assert any("seal-tamper" in x.probe for x in findings)
@@ -359,10 +359,10 @@ def test_chain_tamper_content(tmp_path):
     """Modifying entry content → seal mismatch → FAIL."""
     ledger = str(tmp_path / "l.jsonl")
     mm.preregister(ledger, "exp1", metric="acc", min_n=200, baseline=0.5, pass_threshold=0.6)
-    with open(ledger) as f:
+    with open(ledger, encoding="utf-8") as f:
         entry = json.loads(f.read())
     entry["metric"] = "f1"   # tamper without updating seal
-    with open(ledger, "w") as f:
+    with open(ledger, "w", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
     findings = mm.verify_chain(ledger)
     assert any(f.level == "FAIL" and "chain-integrity" in f.probe for f in findings)
@@ -375,9 +375,9 @@ def test_chain_break_deleted_middle_entry(tmp_path):
     mm.preregister(ledger, "exp2", metric="f1",  min_n=100, baseline=0.5, pass_threshold=0.7)
     mm.preregister(ledger, "exp3", metric="r2",  min_n=50,  baseline=0.0, pass_threshold=0.5)
     # Remove middle entry (exp2)
-    with open(ledger) as f:
+    with open(ledger, encoding="utf-8") as f:
         lines = f.readlines()
-    with open(ledger, "w") as f:
+    with open(ledger, "w", encoding="utf-8") as f:
         f.write(lines[0])   # exp1
         f.write(lines[2])   # exp3 — its prev_seal points to exp2, not exp1
     findings = mm.verify_chain(ledger)
@@ -390,9 +390,9 @@ def test_chain_break_first_entry_deleted(tmp_path):
     mm.preregister(ledger, "exp1", metric="acc", min_n=200, baseline=0.5, pass_threshold=0.6)
     mm.preregister(ledger, "exp2", metric="f1",  min_n=100, baseline=0.5, pass_threshold=0.7)
     # Keep only exp2 (exp1 deleted)
-    with open(ledger) as f:
+    with open(ledger, encoding="utf-8") as f:
         lines = f.readlines()
-    with open(ledger, "w") as f:
+    with open(ledger, "w", encoding="utf-8") as f:
         f.write(lines[1])   # exp2 — prev_seal points to exp1, not genesis
     findings = mm.verify_chain(ledger)
     assert any(f.level == "FAIL" and "chain-integrity" in f.probe for f in findings)
@@ -416,7 +416,7 @@ def test_chain_entry_missing_prev_seal_is_caught(tmp_path):
     entry["seal"] = hashlib.sha256(
         json.dumps(entry, sort_keys=True, ensure_ascii=False).encode()
     ).hexdigest()
-    with open(ledger, "w") as f:
+    with open(ledger, "w", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
     findings = mm.verify_chain(ledger)
     assert any(f.level == "FAIL" for f in findings), findings
@@ -730,7 +730,7 @@ def test_witness_type_in_ledger(tmp_path):
     """Witness record has _type='witness' in ledger file."""
     ledger = str(tmp_path / "l.jsonl")
     mm.witness(ledger, "x", [sys.executable, "-c", "pass"])
-    with open(ledger) as f:
+    with open(ledger, encoding="utf-8") as f:
         entry = json.loads(f.readline())
     assert entry["_type"] == "witness"
 
@@ -824,10 +824,10 @@ def test_anchor_chain_ok_false_on_tamper(tmp_path):
     ledger = str(tmp_path / "l.jsonl")
     mm.preregister(ledger, "exp1",
                    metric="acc", min_n=100, baseline=0.5, pass_threshold=0.6)
-    with open(ledger) as f:
+    with open(ledger, encoding="utf-8") as f:
         entry = json.loads(f.read())
     entry["baseline"] = 0.9  # tamper without updating seal
-    with open(ledger, "w") as f:
+    with open(ledger, "w", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
     a = mm.anchor(ledger)
     assert a["chain_ok"] is False

@@ -25,7 +25,7 @@ def test_reference_verifier_all_vectors_match():
     """The zero-dep reference verifier reproduces every expected verdict."""
     result = subprocess.run(
         [sys.executable, str(VERIFIER), "--vectors", str(VECTORS)],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8",
     )
     assert result.returncode == 0, (
         f"conformance mismatches:\n{result.stdout}\n{result.stderr}"

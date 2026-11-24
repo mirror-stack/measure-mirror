@@ -125,9 +125,9 @@ def main() -> int:
                     help="exit non-zero if RESULTS.md differs from a re-render")
     args = ap.parse_args()
 
-    text = render(json.loads(Path(args.result).read_text()))
+    text = render(json.loads(Path(args.result).read_text(encoding="utf-8")))
     if args.check:
-        current = Path(args.out).read_text()
+        current = Path(args.out).read_text(encoding="utf-8")
         if current != text:
             print("RESULTS.md is stale — re-run make_results.py")
             return 1

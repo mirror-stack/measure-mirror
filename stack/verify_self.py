@@ -21,7 +21,7 @@ OK, FAIL, WARN = "✅", "❌", "⚠️"
 
 
 def load_jsonl(path):
-    return [json.loads(l) for l in Path(path).read_text().splitlines() if l.strip()]
+    return [json.loads(l) for l in Path(path).read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
 def generic_linkage(path, name, report):
@@ -60,7 +60,7 @@ def mm_self_verify(path, name, report):
 
 
 def anchor_check(anchor_file, report):
-    a = json.loads(Path(anchor_file).read_text())
+    a = json.loads(Path(anchor_file).read_text(encoding="utf-8"))
     lp = Path(a["ledger_path"])
     if not lp.exists():  # bundled evidence: fall back to a copy next to the anchor
         lp = Path(anchor_file).parent / lp.name

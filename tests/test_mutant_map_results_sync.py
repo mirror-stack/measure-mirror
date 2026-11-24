@@ -28,11 +28,11 @@ RESULT_SEAL = "ddf46281b6f74b7b8bbbd40fafa8d75f30f911a2063e8d78952f65f7adf0104f"
 
 
 def _result() -> dict:
-    return json.loads((EVAL / "sealed_map.json").read_text())
+    return json.loads((EVAL / "sealed_map.json").read_text(encoding="utf-8"))
 
 
 def test_results_md_is_a_faithful_render_of_the_sealed_json():
-    assert (EVAL / "RESULTS.md").read_text() == make_results.render(_result()), (
+    assert (EVAL / "RESULTS.md").read_text(encoding="utf-8") == make_results.render(_result()), (
         "RESULTS.md drifted from sealed_map.json — re-run "
         "eval/subspace_mutant_map/make_results.py rather than editing the "
         "numbers.")
@@ -63,7 +63,7 @@ def test_vacuous_organic_counts_retell_the_sealed_rows():
     must reproduce from that sealed artifact, not float free of it."""
     d = _result()
     sealed = json.loads(
-        (REPO / "eval" / "subspace_vacuous_real" / "sealed_result.json").read_text())
+        (REPO / "eval" / "subspace_vacuous_real" / "sealed_result.json").read_text(encoding="utf-8"))
     sloppy = [x for x in sealed["rows"] if x["proc"] == "sloppy"]
     got = d["vacuous_organic"]["sloppy_total"]
     assert got["runs"] == len(sloppy)
@@ -73,7 +73,7 @@ def test_vacuous_organic_counts_retell_the_sealed_rows():
 
 
 def test_results_page_keeps_the_dominated_finding_and_the_scope():
-    md = (EVAL / "RESULTS.md").read_text()
+    md = (EVAL / "RESULTS.md").read_text(encoding="utf-8")
     assert "DOMINATED" in md and "cannot improve the verdict" in md
     assert "5c78e503" in md                      # the KILL this answers stays
     assert "equivalent" in md.lower()            # the screen is named

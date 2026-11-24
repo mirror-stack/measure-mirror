@@ -39,7 +39,7 @@ def _run_writers(path, workers=4, per_worker=30):
     env = dict(os.environ)
     env["PYTHONPATH"] = ROOT + os.pathsep + env.get("PYTHONPATH", "")
     procs = [subprocess.Popen([sys.executable, "-c", WRITER, path, str(w), str(per_worker)],
-                              env=env, stderr=subprocess.PIPE, text=True)
+                              env=env, stderr=subprocess.PIPE, encoding="utf-8")
              for w in range(workers)]
     for p in procs:
         _, err = p.communicate(timeout=120)
@@ -84,7 +84,7 @@ def test_held_lock_times_out_instead_of_forking(tmp_path):
          "with mm._ledger_lock(sys.argv[1]):\n"
          "    print('held', flush=True); time.sleep(5)",
          path, ROOT],
-        stdout=subprocess.PIPE, text=True)
+        stdout=subprocess.PIPE, encoding="utf-8")
     try:
         assert holder.stdout.readline().strip() == "held"
         try:

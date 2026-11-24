@@ -17,7 +17,7 @@ STACK = Path(__file__).resolve().parent.parent / "stack"
 
 def _run(cfg):
     return subprocess.run([sys.executable, str(STACK / "verify_all.py"), "--config", str(cfg)],
-                          capture_output=True, text=True)
+                          capture_output=True, encoding="utf-8")
 
 
 def _setup(tmp_path, excluded=None, nochain_has_seal=False):
@@ -119,7 +119,7 @@ def test_missing_am_cli_degrades_instead_of_crashing(tmp_path):
                                "am_ledger": str(led / "am1.jsonl")}), encoding="utf-8")
     env = dict(os.environ, PATH=str(tmp_path / "no-such-bin"))   # `am` unreachable
     r = subprocess.run([sys.executable, str(STACK / "verify_all.py"), "--config", str(cfg)],
-                       capture_output=True, text=True, env=env)
+                       capture_output=True, encoding="utf-8", env=env)
     assert "Traceback" not in r.stderr, r.stderr
     assert "not installed" in r.stdout
     assert "verdict:" in r.stdout, "it must still reach a verdict, not die on the way"

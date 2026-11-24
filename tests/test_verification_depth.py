@@ -28,7 +28,7 @@ def test_orchestrator_discloses_linkage_only_scope(tmp_path):
     cfg = tmp_path / "config.json"
     cfg.write_text(json.dumps({"mm_ledgers": {}, "ledger_dir": str(ledgers)}))
     r = subprocess.run([sys.executable, str(source), "--config", str(cfg)],
-                       capture_output=True, text=True)
+                       capture_output=True, encoding="utf-8")
     assert r.returncode == 0
     assert "linkage-only auto-included ledgers (1): demo.jsonl" in r.stdout
     assert "unverified: external-clock precedence, independent reproduction" in r.stdout

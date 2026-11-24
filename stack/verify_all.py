@@ -19,6 +19,7 @@ a private family ledger and is not bundled. usage: verify_all.py [--config stack
 """
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -42,7 +43,10 @@ def _am(args):
     of graceful degradation that only held where the tool happened to be installed.
     """
     try:
-        return subprocess.run(args, capture_output=True, text=True)
+        # Ask `am` for UTF-8 and read it as UTF-8: decoding with the console codepage
+        # (e.g. Korean cp949) failed on its emoji and handed back stdout=None.
+        return subprocess.run(args, capture_output=True, encoding="utf-8",
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except FileNotFoundError:
         return None
 
@@ -196,7 +200,7 @@ def main():
                     help="exit 0 even when a layer could not run (the verdict still says "
                          "PARTIAL). For runs that knowingly lack the `am` CLI.")
     args = ap.parse_args()
-    cfg = DEFAULT_CONFIG if not args.config else json.loads(Path(args.config).read_text())
+    cfg = DEFAULT_CONFIG if not args.config else json.loads(Path(args.config).read_text(encoding="utf-8"))
     results, could_not_run = [], []
 
     def report(level, layer, name, msg):

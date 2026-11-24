@@ -3880,6 +3880,19 @@ LEDGER_WRITERS = frozenset({"register", "retract", "run"})
 # ─────────────────────────────────────────────────────────────
 # CLI
 # ─────────────────────────────────────────────────────────────
+def _exit_on_fail(findings) -> None:
+    """Exit 1 if any finding FAILs, so a shell script or CI step can gate on the command.
+
+    Every report-printing subcommand ends here. `mm audit` got this first (it used to print
+    "Overall: 🔴 FAIL" and exit 0, which a pipeline reads as success); verify, judge,
+    negative, calibrate and the `mm <name>` shortcut had the same hole until they did too.
+    WARN still exits 0: it asks for a look, not a stop.
+    """
+    import sys
+    if any(f.level == "FAIL" for f in findings):
+        sys.exit(1)
+
+
 def _auto(name: str, ledger: str = "mm_ledger.jsonl") -> None:
     import sys
     cands = [f"{name}.json", f"results/{name}.json", f"mm_results/{name}.json"]
@@ -3896,8 +3909,10 @@ def _auto(name: str, ledger: str = "mm_ledger.jsonl") -> None:
         print(f"🪞 Error: {path} must contain 'acc' and 'n'.")
         sys.exit(1)
     print(f"📂 Loaded {path}")
-    report(cid, audit(ledger, cid, reported_metric=d.get("metric", "acc"),
-                      reported_acc=acc, n=n, baseline=d.get("baseline", 0.5)))
+    fs = audit(ledger, cid, reported_metric=d.get("metric", "acc"),
+               reported_acc=acc, n=n, baseline=d.get("baseline", 0.5))
+    report(cid, fs)
+    _exit_on_fail(fs)
 
 
 def _cli() -> None:
@@ -4078,13 +4093,11 @@ def _cli() -> None:
         fs = audit(args.ledger, cid, reported_metric=metric,
                    reported_acc=acc, n=n, baseline=baseline)
         report(cid, fs)
-        # Exit 1 on any FAIL so `mm audit` can gate a shell script or CI step.
-        # It used to print "Overall: 🔴 FAIL" and exit 0, which a pipeline reads
-        # as success. WARN still exits 0: it asks for a look, not a stop.
-        if any(f.level == "FAIL" for f in fs):
-            sys.exit(1)
+        _exit_on_fail(fs)
     elif args.cmd == "calibrate":
-        report("Mirror Calibration", calibrate())
+        fs = calibrate()
+        report("Mirror Calibration", fs)
+        _exit_on_fail(fs)
     elif args.cmd == "anchor":
         a = anchor(args.ledger)
         if args.pretty:
@@ -4095,9 +4108,10 @@ def _cli() -> None:
         e = retract(args.ledger, args.claim_id, args.reason)
         print(f"🚫 Retracted: {args.claim_id}  reason={args.reason!r}  seal={e['seal']}")
     elif args.cmd == "negative":
-        report("Negative-claim audit",
-               [negative_audit(args.ledger, angles=args.angles,
-                               min_angles=args.min_angles)])
+        fs = [negative_audit(args.ledger, angles=args.angles,
+                             min_angles=args.min_angles)]
+        report("Negative-claim audit", fs)
+        _exit_on_fail(fs)
     elif args.cmd == "verify":
         if args.list_groups:
             print("🪞 Verification groups:")
@@ -4114,6 +4128,7 @@ def _cli() -> None:
             return
         scope_note = f" [{', '.join(args.groups)}]" if args.groups else " [full]"
         report(f"verify{scope_note} ({args.file})", fs)
+        _exit_on_fail(fs)
     elif args.cmd == "judge":
         d = json.load(open(args.file, encoding="utf-8"))
         fs: list[Finding] = []
@@ -4136,6 +4151,7 @@ def _cli() -> None:
                     "pairwise_results, ratings_matrix, scores, "
                     "forward_results+swapped_results, matches, scores_a+scores_b")
         report(f"LLM-judge audit ({args.file})", fs)
+        _exit_on_fail(fs)
     elif args.cmd == "certify":
         fnds = None
         if args.acc is not None:
@@ -4149,6 +4165,11 @@ def _cli() -> None:
         else:
             print(json.dumps(c, indent=2 if args.pretty else None,
                              ensure_ascii=False))
+        # REJECTED (broken chain, tampered seal, retracted claim or a FAIL finding) exits 1.
+        # UNVERIFIED (no preregistration) and CERTIFIED-WITH-WARNINGS exit 0: they are
+        # printed for a reader to judge, the same way WARN is.
+        if c["verdict"] == "REJECTED":
+            sys.exit(1)
     elif args.cmd == "run":
         cmd = [c for c in (args.command or []) if c != "--"]
         if not cmd:

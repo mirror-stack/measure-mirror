@@ -78,7 +78,8 @@ mm audit my_model --acc 0.72 --n 40
 ```
 
 종료 코드: `main`(다음 릴리스)에서는 `mm audit`이 FAIL이 하나라도 있으면 1, OK나 WARN이면 0으로
-끝나서 셸 스크립트나 CI 단계를 멈출 수 있습니다. 위에서 설치한 v0.41.2는 아직 FAIL이어도 0으로
+끝나서 셸 스크립트나 CI 단계를 멈출 수 있습니다. `mm verify`, `mm judge`, `mm negative`,
+`mm calibrate`, `mm <이름>` 단축 명령도 같고, `mm certify`는 판정이 REJECTED일 때 1로 끝납니다. 위에서 설치한 v0.41.2는 아직 FAIL이어도 0으로
 끝나므로, CI에는 README의 pytest 연동(`assert_clean`)을 쓰세요.
 
 ## 5. 골대 옮기기 시도

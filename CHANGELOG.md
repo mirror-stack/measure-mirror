@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.42.0] — 2026-11-24
+
+**Behaviour change:** `mm audit`, `verify`, `judge`, `negative`, `calibrate`, the `mm <name>`
+shortcut and `certify` (on REJECTED) now exit 1 on failure. Scripts that assumed these always
+succeed will stop. Seal format and existing ledgers are unchanged.
 
 - **CLI:** `mm verify`, `mm judge`, `mm negative`, `mm calibrate` and the `mm <name>`
   shortcut now exit 1 when any probe FAILs, like `mm audit`; `mm certify` exits 1 when the

@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## [0.42.0] — 2026-11-24
+
+**Behaviour change:** `mm audit`, `verify`, `judge`, `negative`, `calibrate`, the `mm <name>`
+shortcut and `certify` (on REJECTED) now exit 1 on failure. Scripts that assumed these always
+succeed will stop. Seal format and existing ledgers are unchanged. New: optional Ed25519
+signed seals (`mm keygen`, `mm verify-sig`, extra `measure-mirror[signing]`).
 
 - **Signed seals (who sealed it):** `mm keygen`, `--sign-key` / `--signer` on `register`,
   `retract` and `run` (or `MM_SIGN_KEY` / `MM_SIGNER`), and `mm verify-sig

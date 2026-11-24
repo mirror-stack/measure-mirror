@@ -26,11 +26,11 @@ PROTOCOL_COMBINED = ("73cddbfa59c07124118739efa478fe8f4"
 
 
 def _result() -> dict:
-    return json.loads((EVAL / "sealed_result.json").read_text())
+    return json.loads((EVAL / "sealed_result.json").read_text(encoding="utf-8"))
 
 
 def test_results_md_is_a_faithful_render_of_the_sealed_json():
-    assert (EVAL / "RESULTS.md").read_text() == make_results.render(_result()), (
+    assert (EVAL / "RESULTS.md").read_text(encoding="utf-8") == make_results.render(_result()), (
         "RESULTS.md drifted from sealed_result.json — re-run "
         "eval/subspace_layerb/make_results.py rather than editing the numbers.")
 
@@ -94,7 +94,7 @@ def test_judged_seeds_are_disjoint_from_the_burned_development_seeds():
 
 
 def test_results_page_states_the_scope_it_did_not_close():
-    md = (EVAL / "RESULTS.md").read_text()
+    md = (EVAL / "RESULTS.md").read_text(encoding="utf-8")
     assert "a consistent forgery still passes" in md
     assert "Says nothing about any real substrate" in md
     assert "not** evidence the pipeline beats its own test" in md

@@ -290,7 +290,7 @@ def map_row(case: dict, parent: dict, parent_rule: str) -> dict:
 
 
 def load_cases(path: Path) -> list[dict]:
-    return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
+    return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
 def derived_rows(cases: list[dict], parent_map: dict) -> list[dict]:
@@ -416,7 +416,7 @@ def vacuous_organic_summary(path: Path) -> dict:
     """Re-read the sealed vacuous run as organic mutants: sloppy rows whose
     ground-truth margin shows the manipulation did not bite are EQUIVALENT
     mutants caught by the run-time relabelling — the same filter, run form."""
-    d = json.loads(path.read_text())
+    d = json.loads(path.read_text(encoding="utf-8"))
     rows = d["rows"]
     out: dict = {"seal": "2a22a95a", "per_condition": {}}
     for proc in ("honest", "sloppy"):

@@ -372,7 +372,7 @@ def _load():
         raise SystemExit(
             f"source results not found in {SRC}: {missing}\n"
             f"set FM_CDE_DIR to the directory holding them")
-    return {k: json.loads((SRC / f).read_text()) for k, f in need.items()}
+    return {k: json.loads((SRC / f).read_text(encoding="utf-8")) for k, f in need.items()}
 
 
 REQUIRED = ("id", "kind", "layer", "provenance", "expect", "report")
@@ -384,7 +384,7 @@ def check(path=None) -> int:
     if not path.exists():
         print(f"✗ {path} missing — run without --check first")
         return 1
-    cases = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
+    cases = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     errs = []
     for c in cases:
         for f in REQUIRED:

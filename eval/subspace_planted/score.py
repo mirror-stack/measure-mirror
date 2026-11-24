@@ -67,7 +67,7 @@ def main() -> int:
     args = ap.parse_args()
     path = Path(args.cases)
     print(f"  scoring: {path.name}")
-    cases = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
+    cases = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     results = [score_case(c) for c in cases]
 
     layer_a = [r for r in results if r["layer"] != "B"]

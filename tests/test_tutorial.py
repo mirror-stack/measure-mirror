@@ -8,7 +8,7 @@ CLI = "import sys; from measure_mirror.mm import _cli; sys.argv[0] = 'mm'; _cli(
 
 def mm(cwd, *args):
     r = subprocess.run([sys.executable, "-c", CLI, *args], cwd=cwd,
-                       capture_output=True, text=True)
+                       capture_output=True, encoding="utf-8")
     return r.stdout + r.stderr
 
 
@@ -31,7 +31,7 @@ def test_tutorial_steps(tmp_path):
     assert "n=40 < registered min_n=200." in out
 
     led = tmp_path / "mm_ledger.jsonl"
-    good = led.read_text()
+    good = led.read_text(encoding="utf-8")
     assert '"pass_threshold": 0.6' in good            # the string the sed step edits
     led.write_text(good.replace('"pass_threshold": 0.6', '"pass_threshold": 0.5'))
     assert "Seal mismatch for 'my_model'. Ledger modified." in mm(
@@ -43,4 +43,4 @@ def test_tutorial_steps(tmp_path):
     assert "🚫 Retracted: my_model" in out
     out = mm(tmp_path, "audit", "my_model", "--acc", "0.72", "--n", "500")
     assert "Claim 'my_model' has been retracted." in out
-    assert [json.loads(l).get("_type") for l in led.read_text().splitlines()] == [None, "retraction"]
+    assert [json.loads(l).get("_type") for l in led.read_text(encoding="utf-8").splitlines()] == [None, "retraction"]

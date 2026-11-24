@@ -20,7 +20,7 @@ def _probe_count() -> int:
 def test_readme_probe_count_matches_code():
     """Every 'N probes' claim in README.md must equal the GROUPS registry."""
     n = _probe_count()
-    counts = [int(x) for x in re.findall(r"(\d+) probes", (REPO / "README.md").read_text())]
+    counts = [int(x) for x in re.findall(r"(\d+) probes", (REPO / "README.md").read_text(encoding="utf-8"))]
     assert counts, "no 'N probes' phrase found in README.md — did the wording change?"
     assert all(c == n for c in counts), f"README.md probe count(s) {counts} != code {n}"
 
@@ -29,7 +29,7 @@ def test_readme_ko_probe_count_matches_code():
     """KO total-count claim must equal code; subset-usage numbers (e.g. the
     full_audit '7종' example) are allowed only if strictly below the total."""
     n = _probe_count()
-    counts = [int(x) for x in re.findall(r"(\d+)종 probe", (REPO / "README_KO.md").read_text())]
+    counts = [int(x) for x in re.findall(r"(\d+)종 probe", (REPO / "README_KO.md").read_text(encoding="utf-8"))]
     assert counts, "no 'N종 probe' phrase found in README_KO.md"
     assert max(counts) == n, f"README_KO.md total probe count {max(counts)} != code {n}"
     assert all(c <= n for c in counts), f"a subset count exceeds the total: {counts}"
@@ -65,7 +65,7 @@ def _catalog_counts():
     import collections
     import subprocess
     out = subprocess.run(["git", "ls-files", "catalog/"], cwd=REPO,
-                         capture_output=True, text=True)
+                         capture_output=True, encoding="utf-8")
     if out.returncode != 0:                     # not a git checkout — fall back
         files = [str(f.relative_to(REPO)) for f in (REPO / "catalog").rglob("*.md")]
     else:

@@ -179,7 +179,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--result", default=str(HERE / "sealed_map.json"))
     args = ap.parse_args()
-    d = json.loads(Path(args.result).read_text())
+    d = json.loads(Path(args.result).read_text(encoding="utf-8"))
     (HERE / "RESULTS.md").write_text(render(d))
     print(f"  wrote {HERE / 'RESULTS.md'}")
     return 0

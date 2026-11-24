@@ -16,7 +16,7 @@ STACK = Path(__file__).resolve().parent.parent / "stack"
 
 def _run(script, *args):
     return subprocess.run([sys.executable, str(STACK / script), *args],
-                          capture_output=True, text=True)
+                          capture_output=True, encoding="utf-8")
 
 
 def test_empty_config_is_not_a_pass(tmp_path):

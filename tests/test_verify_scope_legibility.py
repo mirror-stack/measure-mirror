@@ -28,7 +28,7 @@ STACK = Path(__file__).resolve().parent.parent / "stack"
 def _run(cfg, *args, env=None):
     return subprocess.run([sys.executable, str(STACK / "verify_all.py"),
                            "--config", str(cfg), *args],
-                          capture_output=True, text=True, env=env)
+                          capture_output=True, encoding="utf-8", env=env)
 
 
 def _env_without_am():

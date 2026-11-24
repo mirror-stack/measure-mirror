@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- **CLI:** `mm verify`, `mm judge`, `mm negative`, `mm calibrate` and the `mm <name>`
+  shortcut now exit 1 when any probe FAILs, like `mm audit`; `mm certify` exits 1 when the
+  verdict is REJECTED (UNVERIFIED and CERTIFIED-WITH-WARNINGS still exit 0). They all used
+  to print the failure and exit 0. Scripts that relied on these always succeeding will now
+  stop. Covered by `tests/test_cli_exit_codes.py`.
 - **Non-UTF-8 consoles (e.g. Korean Windows, cp949):** `stack/verify_all.py` now asks `am`
   for UTF-8 output and reads it as UTF-8; it used to decode with the console codepage,
   fail on the emoji and lose `am`'s output. `stack/verify_self.py` and the `eval/` scripts
